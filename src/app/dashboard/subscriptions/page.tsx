@@ -144,7 +144,7 @@ export default function SubscriptionsPage() {
         amount: editingSubscription.amount,
         frequency: editingSubscription.frequency,
         renewalDate: editingSubscription.renewalDate,
-        description: editingSubscription.description,
+        description: editingSubscription.description || undefined,
       })
 
       setSubscriptions((prev) =>
@@ -430,7 +430,7 @@ export default function SubscriptionsPage() {
       <Dialog open={!!editingSubscription} onOpenChange={(open) => !open && setEditingSubscription(null)}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
-            <DialogTitle>Modifier l'abonnement</DialogTitle>
+            <DialogTitle>Modifier l&apos;abonnement</DialogTitle>
             <DialogDescription>
               Modifiez les informations de votre abonnement ci-dessous.
             </DialogDescription>

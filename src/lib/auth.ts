@@ -8,8 +8,6 @@ import { Resend } from "resend";
 import { Session } from "next-auth";
 import { type JWT } from "next-auth/jwt";
 
-
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const authOptions: NextAuthOptions = {

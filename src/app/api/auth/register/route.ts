@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs"; // ✅ Utilisation de bcryptjs
+import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);

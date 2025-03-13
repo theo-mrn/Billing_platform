@@ -3,20 +3,16 @@
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from "date-fns"
+import {  subMonths } from "date-fns"
 
 export async function getDashboardStats() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) throw new Error("Non authentifié")
-
-  const now = new Date()
-  const startOfCurrentMonth = startOfMonth(now)
-  const endOfCurrentMonth = endOfMonth(now)
+  if (!session?.user?.email) throw new Error("Non authentifié")
 
   // Récupérer tous les abonnements actifs
   const activeSubscriptions = await prisma.subscription.findMany({
     where: {
-      userId: session.user.id,
+      userId: session.user.email,
       status: "ACTIVE",
     },
     orderBy: {
@@ -62,16 +58,16 @@ export async function getDashboardStats() {
 
 export async function getExpenseChartData() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) throw new Error("Non authentifié")
+  if (!session?.user?.email) throw new Error("Non authentifié")
 
-  const now = new Date()
-  const startOfYear = new Date(now.getFullYear(), 0, 1)
-  const endOfYear = new Date(now.getFullYear(), 11, 31)
+  const currentYear = new Date().getFullYear()
+  const startOfYear = new Date(currentYear, 0, 1)
+  const endOfYear = new Date(currentYear, 11, 31)
 
   // Récupérer tous les abonnements actifs de l'année
   const subscriptions = await prisma.subscription.findMany({
     where: {
-      userId: session.user.id,
+      userId: session.user.email,
       status: "ACTIVE",
       createdAt: {
         gte: startOfYear,
@@ -82,7 +78,7 @@ export async function getExpenseChartData() {
 
   // Calculer les dépenses mensuelles
   const monthlyExpenses = Array.from({ length: 12 }, (_, i) => {
-    const month = i + 1
+    
     const monthTotal = subscriptions.reduce((total, sub) => {
       const monthlyAmount = sub.frequency === "MONTHLY"
         ? sub.amount
@@ -95,7 +91,7 @@ export async function getExpenseChartData() {
     }, 0)
 
     return {
-      month: new Date(now.getFullYear(), i, 1).toLocaleString("fr-FR", { month: "long" }),
+      month: new Date(new Date().getFullYear(), i, 1).toLocaleString("fr-FR", { month: "long" }),
       amount: monthTotal,
     }
   })
@@ -105,11 +101,11 @@ export async function getExpenseChartData() {
 
 export async function getCategoryStats() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) throw new Error("Non authentifié")
+  if (!session?.user?.email) throw new Error("Non authentifié")
 
   const subscriptions = await prisma.subscription.findMany({
     where: {
-      userId: session.user.id,
+      userId: session.user.email,
       status: "ACTIVE",
     },
   })
@@ -130,14 +126,14 @@ export async function getCategoryStats() {
 
 export async function getTrendAnalysis() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) throw new Error("Non authentifié")
+  if (!session?.user?.email) throw new Error("Non authentifié")
 
-  const now = new Date()
-  const threeMonthsAgo = subMonths(now, 3)
+  const currentDate = new Date()
+  const threeMonthsAgo = subMonths(currentDate, 3)
 
   const subscriptions = await prisma.subscription.findMany({
     where: {
-      userId: session.user.id,
+      userId: session.user.email,
       status: "ACTIVE",
       createdAt: {
         gte: threeMonthsAgo,

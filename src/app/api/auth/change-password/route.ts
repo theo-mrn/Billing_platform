@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     if (!user?.password) {
       return NextResponse.json(
-        { error: "Utilisateur non trouvé" },
+        { error: "Utilisateur non trouvé ou authentification OAuth" },
         { status: 404 }
       );
     }
