@@ -30,6 +30,7 @@
     "cobe": "^0.6.3",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.4.10",
+    "jspdf": "^3.0.0",
     "lucide-react": "^0.477.0",
     "motion": "^12.4.10",
     "next": "15.2.1",

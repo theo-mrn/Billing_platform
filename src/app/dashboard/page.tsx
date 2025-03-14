@@ -7,12 +7,16 @@ import { UpcomingRenewals } from "@/components/pages/upcoming-renewals"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useState, useEffect } from "react"
-import { PDFDownloadLink } from "@react-pdf/renderer"
-import { MonthlyReportPDF } from "@/components/pages/monthly-report-pdf"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { getExpenseChartData } from "@/app/actions/stats"
-import { InteractiveHoverButton } from "@/components/magicui/interactive-hover-button"
+import dynamic from "next/dynamic"
+
+// Dynamically import the PDFDownloadButton with no SSR
+const PDFDownloadButton = dynamic(
+  () => import("@/components/pages/pdf-download-button").then((mod) => mod.PDFDownloadButton),
+  { ssr: false }
+)
 
 type ChartData = {
   month: string
@@ -28,7 +32,6 @@ export default function DashboardPage() {
   const [showAllRenewals, setShowAllRenewals] = useState(false)
   const [chartData, setChartData] = useState<ChartData[]>([])
   const currentMonth = new Date()
-  const fileName = `rapport_depenses_${format(currentMonth, "MMMM_yyyy")}.pdf`
 
   useEffect(() => {
     const loadChartData = async () => {
@@ -48,28 +51,10 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tableau de bord</h1>
         <div className="flex items-center gap-4">
-          <PDFDownloadLink
-            document={
-              <MonthlyReportPDF
-                currentMonth={currentMonth}
-                subscriptions={currentMonthData?.subscriptions.map((sub: { name: string; amount: number; category: string }) => ({
-                  ...sub,
-                  id: sub.name,
-                  renewalDate: currentMonth,
-                  frequency: "MONTHLY",
-                  status: "ACTIVE"
-                })) || []}
-              />
-            }
-            fileName={fileName}
-            className="text-sm"
-          >
-            {({ loading }) => (
-              <InteractiveHoverButton disabled={loading}>
-                {loading ? "Génération..." : "Télécharger PDF"}
-              </InteractiveHoverButton>
-            )}
-          </PDFDownloadLink>
+          <PDFDownloadButton 
+            currentMonth={currentMonth}
+            subscriptions={currentMonthData?.subscriptions || []}
+          />
         </div>
       </div>
       <div className="flex gap-4">
