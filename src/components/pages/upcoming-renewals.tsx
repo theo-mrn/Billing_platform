@@ -19,7 +19,11 @@ type Subscription = {
   description?: string | null
 }
 
-export function UpcomingRenewals() {
+interface UpcomingRenewalsProps {
+  limit?: number
+}
+
+export function UpcomingRenewals({ limit = 3 }: UpcomingRenewalsProps) {
   const [upcomingRenewals, setUpcomingRenewals] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -27,7 +31,8 @@ export function UpcomingRenewals() {
     const loadRenewals = async () => {
       try {
         const data = await getDashboardStats()
-        setUpcomingRenewals(data.upcomingRenewals)
+        const renewals = data.upcomingRenewals
+        setUpcomingRenewals(limit > 0 ? renewals.slice(0, limit) : renewals)
       } catch (error) {
         console.error("Erreur lors du chargement des renouvellements:", error)
       } finally {
@@ -35,7 +40,7 @@ export function UpcomingRenewals() {
       }
     }
     loadRenewals()
-  }, [])
+  }, [limit])
 
   if (loading) {
     return <div>Chargement des renouvellements...</div>
@@ -61,7 +66,7 @@ export function UpcomingRenewals() {
       <CardContent>
         <div className="space-y-4">
           {upcomingRenewals.map((subscription) => (
-            <div key={subscription.id} className="flex items-center justify-between">
+            <div key={`${subscription.id}-${subscription.renewalDate.toString()}`} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div>

@@ -48,6 +48,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   subscriptions Subscription[]
+  incomes       Income[]
 }
 
 model VerificationToken {
@@ -67,6 +68,18 @@ model Subscription {
   renewalDate DateTime
   status      String   // ACTIVE, CANCELLED, PAUSED
   logo        String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  source      String
+  amount      Float
+  transferDate DateTime
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

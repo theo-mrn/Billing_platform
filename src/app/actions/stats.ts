@@ -9,91 +9,249 @@ export async function getDashboardStats() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) throw new Error("Non authentifié")
 
-  // Récupérer tous les abonnements actifs
-  const activeSubscriptions = await prisma.subscription.findMany({
-    where: {
-      userId: session.user.email,
-      status: "ACTIVE",
-    },
-    orderBy: {
-      renewalDate: "asc",
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: {
+      subscriptions: {
+        where: { status: "ACTIVE" },
+        orderBy: { renewalDate: "asc" },
+      },
+      incomes: true,
     },
   })
 
-  // Calculer les dépenses mensuelles totales
-  const totalMonthlyExpenses = activeSubscriptions.reduce((total, sub) => {
-    const monthlyAmount = sub.frequency === "MONTHLY"
-      ? sub.amount
-      : sub.frequency === "QUARTERLY"
-      ? sub.amount / 3
-      : sub.frequency === "SEMI_ANNUAL"
-      ? sub.amount / 6
-      : sub.amount / 12
-    return total + monthlyAmount
-  }, 0)
+  if (!user) {
+    throw new Error("Utilisateur non trouvé")
+  }
 
-  // Trouver la catégorie principale
-  const categoryTotals = activeSubscriptions.reduce((acc, sub) => {
-    acc[sub.category] = (acc[sub.category] || 0) + sub.amount
-    return acc
-  }, {} as Record<string, number>)
+  const activeSubscriptions = user.subscriptions
 
-  const mainCategory = Object.entries(categoryTotals).reduce((max, [category, total]) => {
-    return total > (max.total || 0) ? { category, total } : max
-  }, { category: "", total: 0 })
-
-  // Tous les abonnements actifs sont considérés comme des renouvellements à venir
-  const upcomingRenewals = activeSubscriptions.map(sub => ({
-    ...sub,
-    renewalDate: new Date(sub.renewalDate)
+  // Calculer les dépenses mensuelles totales pour l'année en cours
+  const currentYear = new Date().getFullYear()
+  const monthlyExpenses = Array.from({ length: 12 }, (_, i) => ({
+    month: new Date(currentYear, i, 1).toLocaleString("fr-FR", { month: "long" }),
+    amount: 0,
+    subscriptions: [] as Array<{
+      name: string
+      amount: number
+      category: string
+    }>,
   }))
 
+  // Pour chaque abonnement, calculer les dates de renouvellement pour l'année
+  activeSubscriptions.forEach(sub => {
+    const renewalDate = new Date(sub.renewalDate)
+    const startYear = renewalDate.getFullYear()
+    const startMonth = renewalDate.getMonth()
+
+    // Calculer les mois de renouvellement selon la fréquence
+    let renewalMonths: number[] = []
+    
+    switch (sub.frequency) {
+      case "MONTHLY":
+        renewalMonths = Array.from({ length: 12 }, (_, i) => i)
+        break
+      
+      case "QUARTERLY":
+        for (let month = 0; month < 12; month += 3) {
+          const adjustedMonth = (startMonth + month) % 12
+          renewalMonths.push(adjustedMonth)
+        }
+        break
+      
+      case "SEMI_ANNUAL":
+        for (let month = 0; month < 12; month += 6) {
+          const adjustedMonth = (startMonth + month) % 12
+          renewalMonths.push(adjustedMonth)
+        }
+        break
+      
+      case "ANNUAL":
+        if (currentYear === startYear) {
+          renewalMonths = [startMonth]
+        }
+        break
+    }
+
+    // Ajouter le montant aux mois de renouvellement
+    renewalMonths.forEach(month => {
+      const renewalDateForMonth = new Date(currentYear, month, renewalDate.getDate())
+      if (renewalDateForMonth >= renewalDate) {
+        monthlyExpenses[month].amount += sub.amount
+        monthlyExpenses[month].subscriptions.push({
+          name: sub.name,
+          amount: sub.amount,
+          category: sub.category,
+        })
+      }
+    })
+  })
+
+  // Calculer la moyenne mensuelle des dépenses
+  const averageMonthlyExpense = monthlyExpenses.reduce((sum, month) => sum + month.amount, 0) / 12
+
+  // Calculer le total annuel des dépenses
+  const totalAnnualExpense = monthlyExpenses.reduce((sum, month) => sum + month.amount, 0)
+
+  // Obtenir le mois en cours
+  const currentMonth = new Date().getMonth()
+  const currentMonthExpense = monthlyExpenses[currentMonth].amount
+
+  // Calculer les revenus
+  const currentYearIncomes = user.incomes.filter(income => {
+    const transferDate = new Date(income.transferDate)
+    return transferDate.getFullYear() === currentYear
+  })
+
+  const totalAnnualIncome = currentYearIncomes.reduce((sum, income) => sum + income.amount, 0)
+  const averageMonthlyIncome = totalAnnualIncome / 12
+
+  // Calculer le revenu du mois en cours
+  const currentMonthIncome = currentYearIncomes
+    .filter(income => new Date(income.transferDate).getMonth() === currentMonth)
+    .reduce((sum, income) => sum + income.amount, 0)
+
+  // Générer les prochains renouvellements pour le calendrier
+  const now = new Date()
+  const upcomingRenewals = activeSubscriptions.flatMap(sub => {
+    const renewalDate = new Date(sub.renewalDate)
+    const nextRenewals: Array<{
+      id: string
+      name: string
+      category: string
+      renewalDate: Date
+      amount: number
+      frequency: string
+      status: string
+      logo?: string | null
+      description?: string | null
+    }> = []
+
+    // Calculer les 12 prochaines dates de renouvellement
+    let count = 0
+    while (count < 12) {
+      if (renewalDate > now) {
+        nextRenewals.push({
+          ...sub,
+          renewalDate: new Date(renewalDate),
+        })
+        count++
+      }
+
+      // Avancer à la prochaine date selon la fréquence
+      switch (sub.frequency) {
+        case "MONTHLY":
+          renewalDate.setMonth(renewalDate.getMonth() + 1)
+          break
+        case "QUARTERLY":
+          renewalDate.setMonth(renewalDate.getMonth() + 3)
+          break
+        case "SEMI_ANNUAL":
+          renewalDate.setMonth(renewalDate.getMonth() + 6)
+          break
+        case "ANNUAL":
+          renewalDate.setFullYear(renewalDate.getFullYear() + 1)
+          break
+      }
+    }
+
+    return nextRenewals
+  })
+
+  // Trier tous les renouvellements par date
+  const sortedRenewals = upcomingRenewals.sort((a, b) => a.renewalDate.getTime() - b.renewalDate.getTime())
+
   return {
-    totalMonthlyExpenses,
+    averageMonthlyExpense,
+    totalAnnualExpense,
+    currentMonthExpense,
+    averageMonthlyIncome,
+    totalAnnualIncome,
+    currentMonthIncome,
     activeSubscriptions: activeSubscriptions.length,
-    upcomingRenewals,
-    mainCategory,
+    upcomingRenewals: sortedRenewals,
+    monthlyIncomes: currentYearIncomes,
   }
 }
 
-export async function getExpenseChartData() {
+export async function getExpenseChartData(year: number = new Date().getFullYear()) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) throw new Error("Non authentifié")
 
-  const currentYear = new Date().getFullYear()
-  const startOfYear = new Date(currentYear, 0, 1)
-  const endOfYear = new Date(currentYear, 11, 31)
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  })
 
-  // Récupérer tous les abonnements actifs de l'année
+  if (!user) {
+    throw new Error("Utilisateur non trouvé")
+  }
+
+  // Récupérer tous les abonnements actifs
   const subscriptions = await prisma.subscription.findMany({
     where: {
-      userId: session.user.email,
+      userId: user.id,
       status: "ACTIVE",
-      createdAt: {
-        gte: startOfYear,
-        lte: endOfYear,
-      },
     },
   })
 
-  // Calculer les dépenses mensuelles
-  const monthlyExpenses = Array.from({ length: 12 }, (_, i) => {
-    
-    const monthTotal = subscriptions.reduce((total, sub) => {
-      const monthlyAmount = sub.frequency === "MONTHLY"
-        ? sub.amount
-        : sub.frequency === "QUARTERLY"
-        ? sub.amount / 3
-        : sub.frequency === "SEMI_ANNUAL"
-        ? sub.amount / 6
-        : sub.amount / 12
-      return total + monthlyAmount
-    }, 0)
+  // Initialiser les dépenses mensuelles à 0 pour chaque mois
+  const monthlyExpenses = Array.from({ length: 12 }, (_, i) => ({
+    month: new Date(year, i, 1).toLocaleString("fr-FR", { month: "long" }),
+    amount: 0,
+    subscriptions: [] as Array<{
+      name: string
+      amount: number
+      category: string
+    }>,
+  }))
 
-    return {
-      month: new Date(new Date().getFullYear(), i, 1).toLocaleString("fr-FR", { month: "long" }),
-      amount: monthTotal,
+  // Pour chaque abonnement, calculer les dates de renouvellement pour l'année
+  subscriptions.forEach(sub => {
+    const renewalDate = new Date(sub.renewalDate)
+    const startYear = renewalDate.getFullYear()
+    const startMonth = renewalDate.getMonth()
+
+    // Calculer les mois de renouvellement selon la fréquence
+    let renewalMonths: number[] = []
+    
+    switch (sub.frequency) {
+      case "MONTHLY":
+        renewalMonths = Array.from({ length: 12 }, (_, i) => i)
+        break
+      
+      case "QUARTERLY":
+        for (let month = 0; month < 12; month += 3) {
+          const adjustedMonth = (startMonth + month) % 12
+          renewalMonths.push(adjustedMonth)
+        }
+        break
+      
+      case "SEMI_ANNUAL":
+        for (let month = 0; month < 12; month += 6) {
+          const adjustedMonth = (startMonth + month) % 12
+          renewalMonths.push(adjustedMonth)
+        }
+        break
+      
+      case "ANNUAL":
+        if (year === startYear) {
+          renewalMonths = [startMonth]
+        }
+        break
     }
+
+    // Ajouter le montant aux mois de renouvellement
+    renewalMonths.forEach(month => {
+      const renewalDateForMonth = new Date(year, month, renewalDate.getDate())
+      if (renewalDateForMonth >= renewalDate) {
+        monthlyExpenses[month].amount += sub.amount
+        monthlyExpenses[month].subscriptions.push({
+          name: sub.name,
+          amount: sub.amount,
+          category: sub.category,
+        })
+      }
+    })
   })
 
   return monthlyExpenses
