@@ -1,15 +1,15 @@
-FROM node:20-bullseye-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-
-RUN npm install --legacy-peer-deps
+COPY package.json .
 
 COPY . .
 
-EXPOSE 3000
+RUN npm install --legacy-peer-deps
 
 RUN npm run build
+
+EXPOSE 3000
 
 CMD ["npm", "run", "dev"]
