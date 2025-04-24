@@ -255,9 +255,9 @@ export default function SubscriptionsPage() {
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Streaming">Streaming</SelectItem>
+                      <SelectItem value="Bancaire">Bancaire</SelectItem>
                       <SelectItem value="Logiciel">Logiciel</SelectItem>
-                      <SelectItem value="Stockage">Stockage</SelectItem>
+                      <SelectItem value="Streaming">Streaming</SelectItem>
                       <SelectItem value="E-commerce">E-commerce</SelectItem>
                       <SelectItem value="Productivité">Productivité</SelectItem>
                       <SelectItem value="Autre">Autre</SelectItem>

@@ -48,7 +48,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   subscriptions Subscription[]
-  incomes       Income[]
+  incomes       Income[]       @relation("UserIncomes")
 }
 
 model VerificationToken {
@@ -84,5 +84,5 @@ model Income {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation("UserIncomes", fields: [userId], references: [id])
 }

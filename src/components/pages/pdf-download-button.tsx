@@ -4,7 +4,6 @@ import { InteractiveHoverButton } from "@/components/magicui/interactive-hover-b
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { jsPDF } from "jspdf"
-import "jspdf/dist/jspdf.umd.min.js"
 
 interface PDFDownloadButtonProps {
   currentMonth: Date
