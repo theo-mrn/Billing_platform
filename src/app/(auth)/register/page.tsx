@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { PageTransition } from "@/components/animations/page-transition";
+
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
