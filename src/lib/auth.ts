@@ -11,6 +11,7 @@ import { type JWT } from "next-auth/jwt";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const authOptions: NextAuthOptions = {
+  debug: true,
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
@@ -64,8 +65,13 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ user }) {
-      if (!user.email) return true;
+    async signIn({ user, account, profile }) {
+      console.log('SignIn callback:', { user, account, profile });
+      
+      if (!user.email) {
+        console.log('No email provided');
+        return false;
+      }
       
       try {
         await resend.contacts.create({
@@ -74,31 +80,39 @@ export const authOptions: NextAuthOptions = {
           unsubscribed: false,
         });
         console.log(`Utilisateur ajouté à Resend: ${user.email}`);
+        return true;
       } catch (error) {
         console.error("Erreur lors de l'ajout à Resend", error);
+        return true; // Continue même si Resend échoue
       }
-      return true;
     },
     async redirect({ url, baseUrl }) {
+      console.log('Redirect callback:', { url, baseUrl });
+      
       // Ensure baseUrl doesn't have a trailing slash
       baseUrl = baseUrl.replace(/\/$/, '');
       
       // If the url is already an absolute URL that starts with the base URL
       if (url.startsWith(baseUrl)) {
+        console.log('Returning full URL:', url);
         return url;
       }
       
       // If the url is a relative path
       if (url.startsWith('/')) {
-        return `${baseUrl}${url}`;
+        const finalUrl = `${baseUrl}${url}`;
+        console.log('Returning relative URL:', finalUrl);
+        return finalUrl;
       }
       
       // If the url is an absolute URL to a different domain
       if (url.startsWith('http')) {
+        console.log('Returning external URL:', url);
         return url;
       }
       
       // Default fallback
+      console.log('Returning baseUrl:', baseUrl);
       return baseUrl;
     },
   },
