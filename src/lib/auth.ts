@@ -80,14 +80,25 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async redirect({ url, baseUrl }) {
+      // Ensure baseUrl doesn't have a trailing slash
+      baseUrl = baseUrl.replace(/\/$/, '');
+      
+      // If the url is already an absolute URL that starts with the base URL
       if (url.startsWith(baseUrl)) {
-        if (url.includes('/login')) {
-          return baseUrl + '/account';
-        }
         return url;
-      } else if (url.startsWith('/')) {
-        return baseUrl + url;
       }
+      
+      // If the url is a relative path
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      
+      // If the url is an absolute URL to a different domain
+      if (url.startsWith('http')) {
+        return url;
+      }
+      
+      // Default fallback
       return baseUrl;
     },
   },
