@@ -1,5 +1,8 @@
+import animate from "tailwindcss-animate";
+import plugin from "tailwindcss/plugin";
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+const config = {
     darkMode: ["class"],
     content: [
       "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -82,18 +85,28 @@ module.exports = {
         },
       },
     },
-    plugins: [require("tailwindcss-animate"), addVariablesForColors],
+    plugins: [
+      animate,
+      plugin(function({ addBase, theme }) {
+        const colors = theme("colors");
+        if (!colors) return;
+        
+        const newVars = Object.entries(colors).reduce((acc, [key, value]) => {
+          if (typeof value === "string") {
+            acc[`--${key}`] = value;
+          } else if (typeof value === "object") {
+            Object.entries(value).forEach(([subKey, subValue]) => {
+              acc[`--${key}-${subKey}`] = subValue;
+            });
+          }
+          return acc;
+        }, {});
+       
+        addBase({
+          ":root": newVars,
+        });
+      }),
+    ],
   };
 
-
-
-  function addVariablesForColors({ addBase, theme }: any) {
-    let allColors = flattenColorPalette(theme("colors"));
-    let newVars = Object.fromEntries(
-      Object.entries(allColors).map(([key, val]) => [`--${key}`, val])
-    );
-   
-    addBase({
-      ":root": newVars,
-    });
-  }
+export default config;
