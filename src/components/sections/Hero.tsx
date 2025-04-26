@@ -84,14 +84,14 @@ export function Hero({ handleScroll, refs }: HeroProps) {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
-            className="relative aspect-square max-w-md mx-auto overflow-hidden rounded-lg"
+            className="relative max-w-2xl mx-auto overflow-hidden rounded-2xl"
           >
             <Image
-              src="/placeholder.svg"
+              src="/images/dashboard.jpg"
               alt="Portrait"
-              className="object-cover w-full h-full filter brightness-100"
-              width={500}
-              height={500}
+              className="object-contain w-full h-full filter brightness-100"
+              width={1600}
+              height={600}
             />
           </motion.div>
         </div>
