@@ -12,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
 
 type Subscription = {
   id: string
@@ -108,124 +109,127 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Calendrier</h1>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
-            className="px-3 py-1 rounded-md hover:bg-gray-100"
-          >
-            Mois précédent
-          </button>
-          <button
-            onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-1 rounded-md hover:bg-gray-100"
-          >
-            Aujourd&apos;hui
-          </button>
-          <button
-            onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
-            className="px-3 py-1 rounded-md hover:bg-gray-100"
-          >
-            Mois suivant
-          </button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {format(currentDate, "MMMM yyyy", { locale: fr })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-1">
-            {WEEKDAYS.map((day) => (
-              <div key={day.key} className="text-center font-semibold py-2">
-                {day.label}
-              </div>
-            ))}
-            {days.map((day) => {
-              const dateKey = format(day, "yyyy-MM-dd")
-              const dayEvents = events[dateKey] || { subscriptions: [], incomes: [] }
-              const isCurrentMonth = isSameMonth(day, currentDate)
-              const isCurrentDay = isToday(day)
-
-              if (!isCurrentMonth) {
-                return <div key={day.toString()} className="min-h-[100px]" />
-              }
-
-              return (
-                <div
-                  key={day.toString()}
-                  className={cn(
-                    "min-h-[100px] p-2 border rounded-md",
-                    isCurrentDay && "border-2 border-blue-500 bg-blue-50/50"
-                  )}
-                >
-                  <div className={cn(
-                    "font-semibold mb-1",
-                    isCurrentDay && "text-blue-600"
-                  )}>
-                    {format(day, "d")}
-                  </div>
-                  <div className="space-y-1">
-                    {isCurrentMonth && (
-                      <>
-                        {dayEvents.subscriptions.map((sub) => (
-                          <TooltipProvider key={sub.id}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="text-xs p-1 rounded bg-red-100 text-red-800 truncate">
-                                  {sub.name} - {sub.amount.toFixed(2)} €
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="space-y-1">
-                                  <div className="font-medium">{sub.name}</div>
-                                  <div>Catégorie: {sub.category}</div>
-                                  <div>Montant: {sub.amount.toFixed(2)} €</div>
-                                  <div>Fréquence: {
-                                    sub.frequency === "MONTHLY" ? "Mensuel" :
-                                    sub.frequency === "QUARTERLY" ? "Trimestriel" :
-                                    sub.frequency === "SEMI_ANNUAL" ? "Semestriel" :
-                                    "Annuel"
-                                  }</div>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ))}
-                        {dayEvents.incomes.map((income) => (
-                          <TooltipProvider key={income.id}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="text-xs p-1 rounded bg-green-100 text-green-800 truncate">
-                                  {income.source} - {income.amount.toFixed(2)} €
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="space-y-1">
-                                  <div className="font-medium">{income.source}</div>
-                                  <div>Montant: {income.amount.toFixed(2)} €</div>
-                                  {income.description && (
-                                    <div>Description: {income.description}</div>
-                                  )}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+    <>
+      <Toaster />
+      <div className="flex flex-col gap-2 sm:gap-4 w-full p-2 sm:p-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg sm:text-2xl font-bold">Calendrier</h1>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+              className="px-2 py-1 text-xs sm:px-3 sm:py-1 sm:text-base rounded-md hover:bg-gray-100"
+            >
+              Mois précédent
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-2 py-1 text-xs sm:px-3 sm:py-1 sm:text-base rounded-md hover:bg-gray-100"
+            >
+              Aujourd&apos;hui
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+              className="px-2 py-1 text-xs sm:px-3 sm:py-1 sm:text-base rounded-md hover:bg-gray-100"
+            >
+              Mois suivant
+            </button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <span className="text-base sm:text-xl">{format(currentDate, "MMMM yyyy", { locale: fr })}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-1">
+              {WEEKDAYS.map((day) => (
+                <div key={day.key} className="text-center font-semibold py-1 text-xs sm:py-2 sm:text-sm">
+                  {day.label}
+                </div>
+              ))}
+              {days.map((day) => {
+                const dateKey = format(day, "yyyy-MM-dd")
+                const dayEvents = events[dateKey] || { subscriptions: [], incomes: [] }
+                const isCurrentMonth = isSameMonth(day, currentDate)
+                const isCurrentDay = isToday(day)
+
+                if (!isCurrentMonth) {
+                  return <div key={day.toString()} className="min-h-[60px] sm:min-h-[100px]" />
+                }
+
+                return (
+                  <div
+                    key={day.toString()}
+                    className={cn(
+                      "min-h-[60px] sm:min-h-[100px] p-1 sm:p-2 border rounded-md",
+                      isCurrentDay && "border-2 border-blue-500 bg-blue-50/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "font-semibold mb-1 text-xs sm:text-sm",
+                      isCurrentDay && "text-blue-600"
+                    )}>
+                      {format(day, "d")}
+                    </div>
+                    <div className="space-y-1">
+                      {isCurrentMonth && (
+                        <>
+                          {dayEvents.subscriptions.map((sub) => (
+                            <TooltipProvider key={sub.id}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-[10px] sm:text-xs p-0.5 sm:p-1 rounded bg-red-100 text-red-800 truncate">
+                                    {sub.name} - {sub.amount.toFixed(2)} €
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="space-y-1">
+                                    <div className="font-medium">{sub.name}</div>
+                                    <div>Catégorie: {sub.category}</div>
+                                    <div>Montant: {sub.amount.toFixed(2)} €</div>
+                                    <div>Fréquence: {
+                                      sub.frequency === "MONTHLY" ? "Mensuel" :
+                                      sub.frequency === "QUARTERLY" ? "Trimestriel" :
+                                      sub.frequency === "SEMI_ANNUAL" ? "Semestriel" :
+                                      "Annuel"
+                                    }</div>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ))}
+                          {dayEvents.incomes.map((income) => (
+                            <TooltipProvider key={income.id}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-[10px] sm:text-xs p-0.5 sm:p-1 rounded bg-green-100 text-green-800 truncate">
+                                    {income.source} - {income.amount.toFixed(2)} €
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="space-y-1">
+                                    <div className="font-medium">{income.source}</div>
+                                    <div>Montant: {income.amount.toFixed(2)} €</div>
+                                    {income.description && (
+                                      <div>Description: {income.description}</div>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   )
 } 

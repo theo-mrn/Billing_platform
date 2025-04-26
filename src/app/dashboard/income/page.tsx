@@ -214,272 +214,274 @@ export default function IncomePage() {
   return (
     <>
       <Toaster />
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Gestion des revenus</h1>
+      <div className="flex flex-col gap-2 sm:gap-4 w-full p-2 sm:p-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Gestion des revenus</h1>
 
-        {/* Dialogue d'ajout de revenu */}
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-1">
-              <Plus className="h-4 w-4" />
-              Nouveau revenu
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[525px]">
-            <DialogHeader>
-              <DialogTitle>Ajouter un nouveau revenu</DialogTitle>
-              <DialogDescription>
-                Renseignez les informations de votre nouveau revenu ci-dessous.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="source">Source du revenu</Label>
-                <Input
-                  id="source"
-                  placeholder="Salaire, Freelance, etc."
-                  value={source}
-                  onChange={(e) => setSource(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Date de virement</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !transferDate && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {transferDate ? format(transferDate, "PPP", { locale: fr }) : <span>Choisir une date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={transferDate}
-                      onSelect={setTransferDate}
-                      initialFocus
-                      locale={fr}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="amount">Montant</Label>
-                <div className="relative">
+          {/* Dialogue d'ajout de revenu */}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-1">
+                <Plus className="h-4 w-4" />
+                Nouveau revenu
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[525px]">
+              <DialogHeader>
+                <DialogTitle>Ajouter un nouveau revenu</DialogTitle>
+                <DialogDescription>
+                  Renseignez les informations de votre nouveau revenu ci-dessous.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="source">Source du revenu</Label>
                   <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    id="source"
+                    placeholder="Salaire, Freelance, etc."
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">€</div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Date de virement</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !transferDate && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {transferDate ? format(transferDate, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={transferDate}
+                        onSelect={setTransferDate}
+                        initialFocus
+                        locale={fr}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Montant</Label>
+                  <div className="relative">
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">€</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description (optionnel)</Label>
+                  <Input
+                    id="description"
+                    placeholder="Ajouter une description..."
+                    value={description || ""}
+                    onChange={(e) => setDescription(e.target.value || null)}
+                  />
                 </div>
               </div>
+              <DialogFooter>
+                <Button onClick={handleAddIncome}>Ajouter</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (optionnel)</Label>
-                <Input
-                  id="description"
-                  placeholder="Ajouter une description..."
-                  value={description || ""}
-                  onChange={(e) => setDescription(e.target.value || null)}
-                />
-              </div>
+        <div className="mt-4">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher un revenu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+              />
             </div>
+            <Button variant="outline" size="icon">
+              <Filter className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <SlidersHorizontal className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Liste des revenus</CardTitle>
+              <CardDescription>Gérez vos revenus mensuels.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Date de virement</TableHead>
+                    <TableHead>Montant</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredIncomes.map((income) => (
+                    <TableRow key={income.id}>
+                      <TableCell className="font-medium">{income.source}</TableCell>
+                      <TableCell>{format(new Date(income.transferDate), "PPP", { locale: fr })}</TableCell>
+                      <TableCell>{income.amount.toFixed(2)} €</TableCell>
+                      <TableCell>{income.description || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Ouvrir le menu</span>
+                              <SlidersHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => setEditingIncome(income)}>
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteIncome(income.id)}
+                            >
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Total des revenus</span>
+                  <span className="text-green-500 font-bold text-lg">{totalIncome.toFixed(2)} €</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Dialogue de modification de revenu */}
+        <Dialog open={!!editingIncome} onOpenChange={(open) => !open && setEditingIncome(null)}>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>Modifier le revenu</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations de votre revenu ci-dessous.
+              </DialogDescription>
+            </DialogHeader>
+            {editingIncome && (
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-source">Source du revenu</Label>
+                  <Input
+                    id="edit-source"
+                    placeholder="Salaire, Freelance, etc."
+                    value={editingIncome.source}
+                    onChange={(e) =>
+                      setEditingIncome({ ...editingIncome, source: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Date de virement</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !editingIncome.transferDate && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editingIncome.transferDate ? format(editingIncome.transferDate, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={editingIncome.transferDate}
+                        onSelect={(date) =>
+                          setEditingIncome({
+                            ...editingIncome,
+                            transferDate: date || new Date(),
+                          })
+                        }
+                        initialFocus
+                        locale={fr}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-amount">Montant</Label>
+                  <div className="relative">
+                    <Input
+                      id="edit-amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={editingIncome.amount}
+                      onChange={(e) =>
+                        setEditingIncome({
+                          ...editingIncome,
+                          amount: parseFloat(e.target.value),
+                        })
+                      }
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">€</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description (optionnel)</Label>
+                  <Input
+                    id="edit-description"
+                    placeholder="Ajouter une description..."
+                    value={editingIncome.description || ""}
+                    onChange={(e) =>
+                      setEditingIncome({
+                        ...editingIncome,
+                        description: e.target.value || null,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
             <DialogFooter>
-              <Button onClick={handleAddIncome}>Ajouter</Button>
+              <Button onClick={handleUpdateIncome}>Mettre à jour</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
-
-      <div className="mt-4">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher un revenu..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon">
-            <SlidersHorizontal className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon">
-            <Download className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>Liste des revenus</CardTitle>
-            <CardDescription>Gérez vos revenus mensuels.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Date de virement</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredIncomes.map((income) => (
-                  <TableRow key={income.id}>
-                    <TableCell className="font-medium">{income.source}</TableCell>
-                    <TableCell>{format(new Date(income.transferDate), "PPP", { locale: fr })}</TableCell>
-                    <TableCell>{income.amount.toFixed(2)} €</TableCell>
-                    <TableCell>{income.description || "-"}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Ouvrir le menu</span>
-                            <SlidersHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => setEditingIncome(income)}>
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => handleDeleteIncome(income.id)}
-                          >
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Total des revenus</span>
-                <span className="text-green-500 font-bold text-lg">{totalIncome.toFixed(2)} €</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Dialogue de modification de revenu */}
-      <Dialog open={!!editingIncome} onOpenChange={(open) => !open && setEditingIncome(null)}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Modifier le revenu</DialogTitle>
-            <DialogDescription>
-              Modifiez les informations de votre revenu ci-dessous.
-            </DialogDescription>
-          </DialogHeader>
-          {editingIncome && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-source">Source du revenu</Label>
-                <Input
-                  id="edit-source"
-                  placeholder="Salaire, Freelance, etc."
-                  value={editingIncome.source}
-                  onChange={(e) =>
-                    setEditingIncome({ ...editingIncome, source: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Date de virement</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !editingIncome.transferDate && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {editingIncome.transferDate ? format(editingIncome.transferDate, "PPP", { locale: fr }) : <span>Choisir une date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={editingIncome.transferDate}
-                      onSelect={(date) =>
-                        setEditingIncome({
-                          ...editingIncome,
-                          transferDate: date || new Date(),
-                        })
-                      }
-                      initialFocus
-                      locale={fr}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-amount">Montant</Label>
-                <div className="relative">
-                  <Input
-                    id="edit-amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={editingIncome.amount}
-                    onChange={(e) =>
-                      setEditingIncome({
-                        ...editingIncome,
-                        amount: parseFloat(e.target.value),
-                      })
-                    }
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">€</div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Description (optionnel)</Label>
-                <Input
-                  id="edit-description"
-                  placeholder="Ajouter une description..."
-                  value={editingIncome.description || ""}
-                  onChange={(e) =>
-                    setEditingIncome({
-                      ...editingIncome,
-                      description: e.target.value || null,
-                    })
-                  }
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={handleUpdateIncome}>Mettre à jour</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 } 

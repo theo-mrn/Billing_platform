@@ -47,7 +47,7 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2 sm:gap-4 w-full p-2 sm:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tableau de bord</h1>
         <div className="flex items-center gap-4">
@@ -57,10 +57,10 @@ export default function DashboardPage() {
           />
         </div>
       </div>
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 w-full sm:flex-row">
         <DashboardStats />
       </div>
-      <div className="grid grid-cols-[1fr,300px] gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr,300px] gap-2 sm:gap-4">
         <Card>
           <CardHeader>
             <CardTitle>Dépenses mensuelles</CardTitle>

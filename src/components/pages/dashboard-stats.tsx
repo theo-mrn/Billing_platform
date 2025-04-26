@@ -54,7 +54,7 @@ export function DashboardStats() {
 
   return (
     <>
-      <Card>
+      <Card className="flex-1">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Dépenses annuelles
@@ -64,7 +64,7 @@ export function DashboardStats() {
           <div className="text-2xl font-bold">{stats.totalAnnualExpense.toFixed(2)} €</div>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="flex-1">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Dépenses mensuelles moyennes
@@ -74,7 +74,7 @@ export function DashboardStats() {
           <div className="text-2xl font-bold">{stats.averageMonthlyExpense.toFixed(2)} €</div>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="flex-1">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Dépenses du mois en cours
@@ -84,7 +84,7 @@ export function DashboardStats() {
           <div className="text-2xl font-bold">{stats.currentMonthExpense.toFixed(2)} €</div>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="flex-1">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Abonnements actifs

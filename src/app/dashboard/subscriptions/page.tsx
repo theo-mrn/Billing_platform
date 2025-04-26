@@ -195,7 +195,7 @@ export default function SubscriptionsPage() {
     <>
       <Toaster />
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Gestion des abonnements</h1>
+        <h1 className="text-lg sm:text-2xl font-bold">Gestion des abonnements</h1>
 
         {/* Dialogue d'ajout d'abonnement */}
         <Dialog open={open} onOpenChange={setOpen}>
@@ -319,7 +319,7 @@ export default function SubscriptionsPage() {
         </Dialog>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 w-full">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -351,95 +351,153 @@ export default function SubscriptionsPage() {
           </TabsList>
         </Tabs>
 
-        <Card className="mt-4">
+        <Card className="mt-4 w-full p-2 sm:p-6">
           <CardHeader>
-            <CardTitle>Liste des abonnements</CardTitle>
-            <CardDescription>Gérez vos abonnements et leurs renouvellements.</CardDescription>
+            <CardTitle className="text-base sm:text-xl">Liste des abonnements</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Gérez vos abonnements et leurs renouvellements.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Fréquence</TableHead>
-                  <TableHead>Prochain renouvellement</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSubscriptions.map((subscription) => (
-                  <TableRow key={subscription.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={subscription.logo || undefined} alt={subscription.name} />
-                          <AvatarFallback>{subscription.name[0]}</AvatarFallback>
-                        </Avatar>
-                        {subscription.name}
-                      </div>
-                    </TableCell>
-                    <TableCell>{subscription.category}</TableCell>
-                    <TableCell>{subscription.amount.toFixed(2)} €</TableCell>
-                    <TableCell>
-                      {subscription.frequency === "MONTHLY"
-                        ? "Mensuel"
-                        : subscription.frequency === "QUARTERLY"
-                        ? "Trimestriel"
-                        : subscription.frequency === "SEMI_ANNUAL"
-                        ? "Semestriel"
-                        : "Annuel"}
-                    </TableCell>
-                    <TableCell>{format(new Date(subscription.renewalDate), "dd/MM/yyyy", { locale: fr })}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          subscription.status === "ACTIVE"
-                            ? "default"
-                            : subscription.status === "CANCELLED"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {subscription.status === "ACTIVE"
-                          ? "Actif"
-                          : subscription.status === "CANCELLED"
-                          ? "Annulé"
-                          : "En pause"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Ouvrir le menu</span>
-                            <SlidersHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => setEditingSubscription(subscription)}>
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleStatus(subscription.id)}>
-                            {subscription.status === "ACTIVE" ? "Mettre en pause" : "Activer"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => handleDeleteSubscription(subscription.id)}
-                          >
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {/* Table desktop */}
+            <div className="overflow-x-auto hidden sm:block">
+              <Table className="min-w-[700px] text-xs sm:text-sm">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Montant</TableHead>
+                    <TableHead>Fréquence</TableHead>
+                    <TableHead>Prochain renouvellement</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredSubscriptions.map((subscription) => (
+                    <TableRow key={subscription.id}>
+                      <TableCell className="font-medium px-2 py-1">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={subscription.logo || undefined} alt={subscription.name} />
+                            <AvatarFallback>{subscription.name[0]}</AvatarFallback>
+                          </Avatar>
+                          {subscription.name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 py-1">{subscription.category}</TableCell>
+                      <TableCell className="px-2 py-1">{subscription.amount.toFixed(2)} €</TableCell>
+                      <TableCell className="px-2 py-1">
+                        {subscription.frequency === "MONTHLY"
+                          ? "Mensuel"
+                          : subscription.frequency === "QUARTERLY"
+                          ? "Trimestriel"
+                          : subscription.frequency === "SEMI_ANNUAL"
+                          ? "Semestriel"
+                          : "Annuel"}
+                      </TableCell>
+                      <TableCell className="px-2 py-1">{format(new Date(subscription.renewalDate), "dd/MM/yyyy", { locale: fr })}</TableCell>
+                      <TableCell className="px-2 py-1">
+                        <Badge
+                          variant={
+                            subscription.status === "ACTIVE"
+                              ? "default"
+                              : subscription.status === "CANCELLED"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {subscription.status === "ACTIVE"
+                            ? "Actif"
+                            : subscription.status === "CANCELLED"
+                            ? "Annulé"
+                            : "En pause"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right px-2 py-1">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Ouvrir le menu</span>
+                              <SlidersHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => setEditingSubscription(subscription)}>
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleStatus(subscription.id)}>
+                              {subscription.status === "ACTIVE" ? "Mettre en pause" : "Activer"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteSubscription(subscription.id)}
+                            >
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {/* Cards mobile */}
+            <div className="block sm:hidden space-y-2">
+              {filteredSubscriptions.map((subscription) => (
+                <div key={subscription.id} className="rounded-lg border p-3 flex flex-col gap-2 bg-muted">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={subscription.logo || undefined} alt={subscription.name} />
+                      <AvatarFallback>{subscription.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="font-semibold text-sm flex-1">{subscription.name}</div>
+                    <Badge
+                      variant={
+                        subscription.status === "ACTIVE"
+                          ? "default"
+                          : subscription.status === "CANCELLED"
+                          ? "destructive"
+                          : "secondary"
+                      }
+                    >
+                      {subscription.status === "ACTIVE"
+                        ? "Actif"
+                        : subscription.status === "CANCELLED"
+                        ? "Annulé"
+                        : "En pause"}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                    <div><span className="font-medium">Catégorie:</span> {subscription.category}</div>
+                    <div><span className="font-medium">Montant:</span> {subscription.amount.toFixed(2)} €</div>
+                    <div><span className="font-medium">Fréquence:</span> {subscription.frequency === "MONTHLY"
+                      ? "Mensuel"
+                      : subscription.frequency === "QUARTERLY"
+                      ? "Trimestriel"
+                      : subscription.frequency === "SEMI_ANNUAL"
+                      ? "Semestriel"
+                      : "Annuel"}</div>
+                    <div><span className="font-medium">Renouvellement:</span> {format(new Date(subscription.renewalDate), "dd/MM/yyyy", { locale: fr })}</div>
+                  </div>
+                  {subscription.description && (
+                    <div className="text-xs text-muted-foreground">{subscription.description}</div>
+                  )}
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button size="sm" variant="outline" onClick={() => setEditingSubscription(subscription)}>
+                      Modifier
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleToggleStatus(subscription.id)}>
+                      {subscription.status === "ACTIVE" ? "Mettre en pause" : "Activer"}
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleDeleteSubscription(subscription.id)}>
+                      Supprimer
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
