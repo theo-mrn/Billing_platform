@@ -44,7 +44,7 @@ export function LoginForm() {
       if (result?.error) {
         setError("Email ou mot de passe incorrect");
       } else {
-        router.push("/dashbord");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch {
@@ -57,7 +57,7 @@ export function LoginForm() {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", {
-        callbackUrl: "/dashbord",
+        callbackUrl: "/dashboard",
         redirect: true,
       });
     } catch (error) {
