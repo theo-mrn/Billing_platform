@@ -28,7 +28,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import { useTheme } from "@/lib/themes";
+import { useTheme, Theme } from "@/lib/themes";
+import { Session } from "next-auth";
 
 const navigationItems = [
   {
@@ -107,7 +108,14 @@ const staggerVariants = {
   },
 };
 
-function SidebarContent({ isCollapsed, setTheme, session, pathname }) {
+interface SidebarContentProps {
+  isCollapsed: boolean;
+  setTheme: (theme: Theme) => void;
+  session: Session | null;
+  pathname: string;
+}
+
+function SidebarContent({ isCollapsed, setTheme, session, pathname }: SidebarContentProps) {
   return (
     <motion.div
       className="relative z-40 flex h-full shrink-0 flex-col"
