@@ -4,12 +4,12 @@ import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { Bell, Lock, User, Upload, X, Camera, Mail, LogOut } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Header } from "@/components/sections/Header";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { Home } from "lucide-react";
 
 export default function AccountPage() {
   const { data: session } = useSession();
@@ -129,7 +131,7 @@ export default function AccountPage() {
     return (
    
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Header/>
+
         <div className="bg-white p-6 rounded-lg shadow-md">
           <p className="text-center text-gray-600">Veuillez vous connecter pour accéder à votre compte.</p>
         </div>
@@ -137,9 +139,19 @@ export default function AccountPage() {
     );
   }
 
+  // Bouton retour dashboard
+  const DashboardButton = () => (
+    <Link href="/dashboard" className="absolute left-6 top-6 z-20">
+      <button className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground transition-colors shadow">
+        <Home className="h-5 w-5" />
+        <span className="font-medium">Dashboard</span>
+      </button>
+    </Link>
+  );
+
   return (
-    <div className="min-h-screen bg-background py-40 px-4 md:px-6 flex flex-col items-center ">
-      <Header/>
+    <div className="min-h-screen bg-background py-40 px-4 md:px-6 flex flex-col items-center relative ">
+      <DashboardButton />
       <Card className={cn(
         "w-full max-w-4xl mx-auto overflow-hidden transition-all duration-500",
         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
@@ -153,7 +165,17 @@ export default function AccountPage() {
                 <DialogTrigger asChild>
                   <div className="cursor-pointer group relative">
                     <Avatar className="h-28 w-28 border-4 border-primary-foreground/20 shadow-xl transition-transform duration-300 group-hover:scale-105">
-                      <AvatarImage src={session.user?.image || "/placeholder.svg"} alt={session.user?.name || "User"} />
+                      {session.user?.image ? (
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={session.user.image}
+                            alt={session.user?.name || "User"}
+                            fill
+                            priority={true}
+                            className="object-cover rounded-full"
+                          />
+                        </div>
+                      ) : null}
                       <AvatarFallback className="bg-muted text-muted-foreground text-2xl">
                         {session.user?.name?.[0]?.toUpperCase() || "U"}
                       </AvatarFallback>
@@ -171,7 +193,16 @@ export default function AccountPage() {
                   <div className="flex flex-col gap-4 py-4">
                     <div className="flex justify-center py-4">
                       <Avatar className="h-32 w-32 border-4 border-muted">
-                        <AvatarImage src={session.user?.image || "/placeholder.svg"} alt={session.user?.name || "User"} />
+                        {session.user?.image ? (
+                          <div className="relative w-full h-full">
+                            <Image
+                              src={session.user.image}
+                              alt={session.user?.name || "User"}
+                              fill
+                              className="object-cover rounded-full"
+                            />
+                          </div>
+                        ) : null}
                         <AvatarFallback className="bg-muted text-muted-foreground text-3xl">
                           {session.user?.name?.[0]?.toUpperCase() || "U"}
                         </AvatarFallback>

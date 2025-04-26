@@ -89,31 +89,37 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log('Redirect callback:', { url, baseUrl });
       
-      // Ensure baseUrl doesn't have a trailing slash
-      baseUrl = baseUrl.replace(/\/$/, '');
+      // Use the environment variable for the base URL
+      const correctBaseUrl = process.env.NEXT_PUBLIC_APP_URL || baseUrl;
       
-      // If the url is already an absolute URL that starts with the base URL
-      if (url.startsWith(baseUrl)) {
+      // If the url is already an absolute URL that starts with the correct base URL
+      if (url.startsWith(correctBaseUrl)) {
         console.log('Returning full URL:', url);
         return url;
       }
       
       // If the url is a relative path
       if (url.startsWith('/')) {
-        const finalUrl = `${baseUrl}${url}`;
+        const finalUrl = `${correctBaseUrl}${url}`;
         console.log('Returning relative URL:', finalUrl);
         return finalUrl;
       }
       
       // If the url is an absolute URL to a different domain
       if (url.startsWith('http')) {
+        // For development, ensure we're using the correct URL
+        if (process.env.NODE_ENV === 'development') {
+          const localUrl = url.replace(baseUrl, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+          console.log('Returning local URL:', localUrl);
+          return localUrl;
+        }
         console.log('Returning external URL:', url);
         return url;
       }
       
       // Default fallback
-      console.log('Returning baseUrl:', baseUrl);
-      return baseUrl;
+      console.log('Returning baseUrl:', correctBaseUrl);
+      return correctBaseUrl;
     },
   },
   session: { strategy: "jwt" as const },

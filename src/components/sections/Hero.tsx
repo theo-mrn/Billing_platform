@@ -1,21 +1,24 @@
 "use client"
 
 import { motion, useScroll, useTransform } from "framer-motion"
-import { Button } from "@/components/ui/button"
 import { ChevronDown } from "lucide-react"
 import { Spotlight } from "@/components/ui/spotlight-new"
 import Image from "next/image"
+import Link from "next/link"
+import { HoverBorderGradient } from "@/components/ui/hover-border-gradient"
+import { useSession } from "next-auth/react"
+import { LoginDialog } from "@/components/auth/login-dialog"
 
 interface HeroProps {
   handleScroll: (ref: React.RefObject<HTMLDivElement>) => void
   refs: {
-    projectsRef: React.RefObject<HTMLDivElement>
+    featureRef: React.RefObject<HTMLDivElement>
     contactRef: React.RefObject<HTMLDivElement>
   }
 }
 
 export function Hero({ handleScroll, refs }: HeroProps) {
-  const { projectsRef, contactRef } = refs
+  const { data: session } = useSession()
   const { scrollYProgress } = useScroll()
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
   const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9])
@@ -42,7 +45,7 @@ export function Hero({ handleScroll, refs }: HeroProps) {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="text-4xl md:text-6xl font-bold tracking-tight"
               >
-                Développeur Web <span className="text-primary">Full Stack</span>
+                Gérez vos <span className="text-primary">Abonnements</span>
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -50,7 +53,7 @@ export function Hero({ handleScroll, refs }: HeroProps) {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="text-xl text-muted-foreground"
               >
-                Je crée des applications web modernes et performantes avec React et Next.js
+                Simplifiez la gestion de vos abonnements et gardez le contrôle de vos dépenses
               </motion.p>
             </div>
             <motion.div
@@ -59,12 +62,15 @@ export function Hero({ handleScroll, refs }: HeroProps) {
               transition={{ duration: 0.5, delay: 0.6 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <Button onClick={() => handleScroll(projectsRef)} size="lg">
-                Voir mes projets
-              </Button>
-              <Button onClick={() => handleScroll(contactRef)} variant="outline" size="lg">
-                Me contacter
-              </Button>
+              {session ? (
+                <Link href="/dashboard">
+                  <HoverBorderGradient className="px-6">
+                    Accéder à mon espace
+                  </HoverBorderGradient>
+                </Link>
+              ) : (
+                <LoginDialog />
+              )}
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -93,7 +99,8 @@ export function Hero({ handleScroll, refs }: HeroProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 1 }}
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2"
+          className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
+          onClick={() => handleScroll(refs.featureRef)}
         >
           <span className="text-sm text-muted-foreground">Découvrir</span>
           <ChevronDown className="animate-bounce text-muted-foreground" size={24} />

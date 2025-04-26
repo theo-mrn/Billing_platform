@@ -60,15 +60,33 @@ export default function DashboardPage() {
       <div className="flex gap-4">
         <DashboardStats />
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Dépenses mensuelles</CardTitle>
-          <CardDescription>Évolution de vos dépenses d&apos;abonnement sur les 12 derniers mois</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[400px]">
-          <ExpenseChart />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-[1fr,300px] gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Dépenses mensuelles</CardTitle>
+            <CardDescription>Évolution de vos dépenses d&apos;abonnement sur les 12 derniers mois</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[400px]">
+            <ExpenseChart />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Détail des dépenses</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1 border-l pl-3">
+              {chartData.map((month) => (
+                <div key={month.month} className="flex justify-between items-center text-sm py-1">
+                  <span className="capitalize text-muted-foreground">{month.month}</span>
+                  <span className="font-medium">{month.amount.toLocaleString('fr-FR')} €</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>

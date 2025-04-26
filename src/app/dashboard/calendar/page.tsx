@@ -152,12 +152,15 @@ export default function CalendarPage() {
               const isCurrentMonth = isSameMonth(day, currentDate)
               const isCurrentDay = isToday(day)
 
+              if (!isCurrentMonth) {
+                return <div key={day.toString()} className="min-h-[100px]" />
+              }
+
               return (
                 <div
                   key={day.toString()}
                   className={cn(
                     "min-h-[100px] p-2 border rounded-md",
-                    !isCurrentMonth && "bg-gray-800 text-gray-400 border-gray-700",
                     isCurrentDay && "border-2 border-blue-500 bg-blue-50/50"
                   )}
                 >

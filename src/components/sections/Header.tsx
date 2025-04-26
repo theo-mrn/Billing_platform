@@ -7,71 +7,77 @@ import { useSession } from "next-auth/react"
 import Link from 'next/link'
 import ProfileMenu from "@/components/ui/ProfileMenu"
 import Image from "next/image"
-import { ModeToggle } from "@/components/ui/mode-toggle"
-import { Package } from "lucide-react"
+import { Package, Menu, X } from "lucide-react"
 
 interface HeaderProps {
   variant?: 'default' | 'dashboard'
+  handleScroll?: (ref: React.RefObject<HTMLDivElement>) => void
+  refs?: {
+    featureRef?: React.RefObject<HTMLDivElement>
+    pricingRef?: React.RefObject<HTMLDivElement>
+  }
 }
 
-export function Header({ variant = 'default' }: HeaderProps) {
+export function Header({ variant = 'default', handleScroll, refs }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { data: session } = useSession()
+
+  const navigationItems = [
+    { label: "Fonctionnalités", ref: refs?.featureRef },
+    { label: "Tarifs", ref: refs?.pricingRef }
+  ]
+
+  const handleMobileMenuClick = (ref?: React.RefObject<HTMLDivElement>) => {
+    if (ref) {
+      setIsMobileMenuOpen(false)
+      setTimeout(() => {
+        handleScroll?.(ref)
+      }, 100)
+    }
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
       <div className="mx-auto px-6 py-4 flex justify-between items-center">
-        {variant === 'dashboard' ? (
-          <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
-            <Package className="h-6 w-6" />
-            <span>FacturePro</span>
-          </Link>
-        ) : (
-          <h1 className="text-xl font-bold">Théo MORIN</h1>
-        )}
+        <div className="flex items-center gap-4">
+          {variant === 'default' && (
+            <div className="md:hidden">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </div>
+          )}
+          
+          {variant === 'dashboard' ? (
+            <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
+              <Package className="h-6 w-6" />
+              <span>FacturePro</span>
+            </Link>
+          ) : (
+            <h1 className="text-xl font-bold">Yner Cloud</h1>
+          )}
+        </div>
         
         {variant === 'default' && (
-          <nav className="flex space-x-8">
-            <Link href="/dashboard" className="text-sm font-medium">Dashboard</Link>
-            <Link href="/about" className="text-sm font-medium">À propos</Link>
-            <Link href="/projects" className="text-sm font-medium">Projets</Link>
-            <Link href="/contact" className="text-sm font-medium">Contact</Link>
+          <nav className="hidden md:flex space-x-8">
+            {navigationItems.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => item.ref && handleScroll?.(item.ref)}
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
         )}
 
         <div className="flex items-center gap-2">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="md:hidden"
-          >
-            <Button variant="ghost" size="icon">
-              <span className="sr-only">Menu</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="4" x2="20" y1="12" y2="12" />
-                <line x1="4" x2="20" y1="6" y2="6" />
-                <line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
-            </Button>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <ModeToggle />
-          </motion.div>
           <div className="relative">
             {session ? (
               <button
@@ -116,6 +122,30 @@ export function Header({ variant = 'default' }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden bg-background border-b"
+          >
+            <nav className="container mx-auto px-6 py-4 flex flex-col space-y-4">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => handleMobileMenuClick(item.ref)}
+                  className="text-sm font-medium hover:text-primary transition-colors text-left"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 } 

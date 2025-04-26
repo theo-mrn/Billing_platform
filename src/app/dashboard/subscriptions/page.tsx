@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster } from "@/components/ui/sonner"
 import { getSubscriptions, addSubscription, deleteSubscription, updateSubscription, toggleSubscriptionStatus } from "@/app/actions/subscriptions"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Type pour les abonnements
 export type Subscription = {
@@ -60,6 +61,7 @@ export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
+  const [activeTab, setActiveTab] = useState("all")
 
   // États pour le formulaire d'ajout d'abonnement
   const [name, setName] = useState("")
@@ -172,12 +174,18 @@ export default function SubscriptionsPage() {
     }
   }
 
-  // Filtrer les abonnements en fonction de la recherche
-  const filteredSubscriptions = subscriptions.filter(
-    (sub) =>
-      sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sub.category.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  // Filtrer les abonnements en fonction de la recherche et de l'onglet actif
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    const matchesSearch = sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sub.category.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const matchesTab = activeTab === "all" || sub.category === activeTab
+
+    return matchesSearch && matchesTab
+  })
+
+  // Obtenir les catégories uniques
+  const categories = ["all", ...Array.from(new Set(subscriptions.map(sub => sub.category)))]
 
   if (loading) {
     return <div>Chargement...</div>
@@ -332,6 +340,16 @@ export default function SubscriptionsPage() {
             <Download className="h-4 w-4" />
           </Button>
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList>
+            {categories.map((category) => (
+              <TabsTrigger key={category} value={category}>
+                {category === "all" ? "Tous" : category}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         <Card className="mt-4">
           <CardHeader>

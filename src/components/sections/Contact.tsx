@@ -3,9 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, Github, Linkedin } from "lucide-react"
 import { TypewriterEffect } from "../ui/typewriter-effect"
-import { config } from "@/app/config"
 import { useContactForm } from "@/hooks/useContactForm"
 
 export function Contact() {
@@ -26,7 +24,7 @@ export function Contact() {
   ];
 
   return (
-    <section className="py-20 bg-muted/30">
+    <section className="pt-32 ">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -39,62 +37,7 @@ export function Contact() {
           <div className="w-20 h-1 bg-primary/50 rounded-full mt-4" />
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            viewport={{ once: true, margin: "-100px" }}
-            className="space-y-6"
-          >
-            <h3 className="text-2xl font-bold">Parlons de votre projet</h3>
-            <p className="text-muted-foreground">
-              N&apos;hésitez pas à me contacter pour discuter de vos projets ou pour toute question.
-            </p>
-            <div className="space-y-4 pt-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Mail className="text-primary" size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{config.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Linkedin className="text-primary" size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">LinkedIn</p>
-                  <a 
-                    href="https://www.linkedin.com/in/theo-morin-52a98b291/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium hover:text-primary transition-colors"
-                  >
-                    linkedin.com/in/theo-morin-52a98b291
-                  </a>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Github className="text-primary" size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">GitHub</p>
-                  <a 
-                    href={config.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium hover:text-primary transition-colors"
-                  >
-                    {config.github}
-                  </a>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+        <div className="max-w-2xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

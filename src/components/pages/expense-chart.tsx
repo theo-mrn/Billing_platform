@@ -80,6 +80,7 @@ export function ExpenseChart() {
                 tickFormatter={(value) => `${value}€`}
               />
               <Tooltip
+                cursor={false}
                 content={({ active, payload }) => {
                   if (active && payload && payload.length > 0 && payload[0]) {
                     const data = payload[0].payload as ChartData;

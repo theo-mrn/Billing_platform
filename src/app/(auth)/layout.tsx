@@ -1,4 +1,3 @@
-import { Header } from "@/components/sections/Headerwithoutconnection";
 import { ClientAnimationWrapper } from "@/components/client/ClientAnimationWrapper";
 
 export default function AuthLayout({
@@ -8,7 +7,6 @@ export default function AuthLayout({
 }) {
   return (
     <>
-      <Header name="Auth" />
       <ClientAnimationWrapper>
         {children}
       </ClientAnimationWrapper>

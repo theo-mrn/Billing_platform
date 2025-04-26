@@ -1,5 +1,5 @@
 import { config } from "@/app/config";
-
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -10,6 +10,9 @@ export function Footer() {
             <h3 className="font-bold">{config.name}</h3>
             <span className="text-sm text-muted-foreground">© {new Date().getFullYear()}</span>
           </div>
+          <Link href="/contact">
+            Me contacter
+          </Link>
           <p className="text-sm text-muted-foreground text-center md:text-right">
             Conçu et développé avec passion
           </p>
