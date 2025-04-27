@@ -3,22 +3,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExpenseChart } from "@/components/pages/expense-chart"; // Assuming this component exists and works client-side
 
-// Reuse or import shared ChartData type
-type ChartData = {
-  month: string;
-  amount: number;
-  subscriptions: Array<{
-    name: string;
-    amount: number;
-    category: string;
-  }>;
-};
+// Removed unused type definition
+// type ChartData = { ... };
 
-interface MonthlyExpensesChartCardProps {
-  initialChartData: ChartData[];
-}
+// Removed props interface
+// interface MonthlyExpensesChartCardProps { ... }
 
-export function MonthlyExpensesChartCard({ initialChartData }: MonthlyExpensesChartCardProps) {
+// Removed props from function signature
+export function MonthlyExpensesChartCard() {
   // Pass the initialChartData to the ExpenseChart component if needed
   // Or ExpenseChart might fetch its own data based on props/context
 

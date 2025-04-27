@@ -16,8 +16,6 @@ export default async function DashboardPage() {
   // Await the data
   const chartData = await chartDataPromise
 
-  const currentMonth = new Date()
-
   return (
     <div className="flex flex-col gap-2 sm:gap-4 w-full p-2 sm:p-6">
       <div className="flex items-center justify-between">
@@ -35,7 +33,7 @@ export default async function DashboardPage() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-[1fr,300px] gap-2 sm:gap-4">
         <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-[400px] w-full" /></CardContent></Card>}>
-          <MonthlyExpensesChartCard initialChartData={chartData} />
+          <MonthlyExpensesChartCard />
         </Suspense>
 
         <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>}>
