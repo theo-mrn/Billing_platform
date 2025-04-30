@@ -17,9 +17,13 @@ type ChartData = {
   subscriptions: Subscription[]
 }
 
-export function ExpenseChart() {
-  const [data, setData] = useState<ChartData[]>([])
-  const [loading, setLoading] = useState(true)
+interface ExpenseChartProps {
+  initialChartData?: ChartData[]
+}
+
+export function ExpenseChart({ initialChartData }: ExpenseChartProps) {
+  const [data, setData] = useState<ChartData[]>(initialChartData || [])
+  const [loading, setLoading] = useState(!initialChartData)
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
   const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString())
 
@@ -35,8 +39,11 @@ export function ExpenseChart() {
         setLoading(false)
       }
     }
-    loadChartData()
-  }, [selectedYear])
+
+    if (!initialChartData) {
+      loadChartData()
+    }
+  }, [selectedYear, initialChartData])
 
   if (loading) {
     return <div>Chargement du graphique...</div>

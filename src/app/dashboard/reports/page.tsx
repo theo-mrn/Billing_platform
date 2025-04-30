@@ -2,6 +2,7 @@ import { getSubscriptions } from "@/app/actions/subscriptions"
 import { Suspense } from 'react'
 import { Skeleton } from "@/components/ui/skeleton"
 import { ReportsPageClientContent } from './_components/reports-page-client-content'
+import { getExpenseChartData } from "@/app/actions/stats"
 
 type CategoryData = {
   category: string
@@ -9,12 +10,28 @@ type CategoryData = {
   percentage: number
 }
 
+type ChartData = {
+  month: string
+  amount: number
+  subscriptions: Array<{
+    name: string
+    amount: number
+    category: string
+  }>
+}
+
 export default async function ReportsPage() {
   let initialCategoryData: CategoryData[] = []
   let errorMessage: string | null = null
+  let expenseChartData: ChartData[] = []
 
   try {
-    const subscriptions = await getSubscriptions()
+    const [subscriptions, chartData] = await Promise.all([
+      getSubscriptions(),
+      getExpenseChartData()
+    ])
+
+    expenseChartData = chartData
 
     const categoryTotals = subscriptions.reduce((acc, sub) => {
       acc[sub.category] = (acc[sub.category] || 0) + sub.amount
@@ -45,7 +62,8 @@ export default async function ReportsPage() {
     <Suspense fallback={<ReportsPageSkeleton />}>
       <ReportsPageClientContent 
         initialCategoryData={initialCategoryData} 
-        errorLoading={errorMessage} 
+        errorLoading={errorMessage}
+        expenseChartData={expenseChartData}
       />
     </Suspense>
   )

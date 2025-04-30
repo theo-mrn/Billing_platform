@@ -34,23 +34,23 @@ export function CurrentMonthDetails({ initialChartData }: CurrentMonthDetailsPro
 
   return (
     <>
-      <Card>
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle className="text-base">Détails pour {format(currentMonth, "MMMM yyyy", { locale: fr })}</CardTitle>
           <CardDescription>
             {/* Peut-être ajouter une description si nécessaire */}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-hidden">
           {currentMonthData && currentMonthData.subscriptions.length > 0 ? (
-            <div className="space-y-2">
+            <div className="h-full flex flex-col">
               <div className="flex justify-between items-center font-semibold text-lg mb-2 pb-2 border-b">
                 <span>Total ce mois:</span>
                 <span>
                   {currentMonthData.amount.toLocaleString('fr-FR')} €
                 </span>
               </div>
-              <div className="space-y-1 max-h-[280px] overflow-y-auto pr-2">
+              <div className="flex-1 overflow-y-auto space-y-1 pr-2">
                 {/* Afficher les premiers éléments */}
                 {currentMonthData.subscriptions.slice(0, initialSubscriptionsLimit).map((sub, index) => (
                   <div key={index} className="flex justify-between items-start text-sm border-b pb-1 last:border-b-0">

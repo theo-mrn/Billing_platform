@@ -61,7 +61,7 @@ export function PDFDownloadButton({ currentMonth, subscriptions }: PDFDownloadBu
 
   return (
     <InteractiveHoverButton onClick={generatePDF}>
-      Télécharger PDF
+      PDF
     </InteractiveHoverButton>
   )
 } 

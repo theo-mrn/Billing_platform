@@ -7,14 +7,10 @@ import {
   BarChart3,
   CreditCard,
   Home,
-  CalendarDays,
-  Wallet,
   ChevronsUpDown,
   UserCircle,
   LogOut,
-  ArrowUpRight,
   Moon,
-  Menu
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -33,29 +29,14 @@ import { Session } from "next-auth";
 
 const navigationItems = [
   {
-    title: "Tableau de bord",
+    title: "Home",
     href: "/dashboard",
     icon: Home,
-  },
-  {
-    title: "Revenus",
-    href: "/dashboard/income",
-    icon: ArrowUpRight,
   },
   {
     title: "Abonnements",
     href: "/dashboard/subscriptions",
     icon: CreditCard,
-  },
-  {
-    title: "Calendrier",
-    href: "/dashboard/calendar",
-    icon: CalendarDays,
-  },
-  {
-    title: "Bilan",
-    href: "/dashboard/balance",
-    icon: Wallet,
   },
   {
     title: "Rapports",
@@ -246,9 +227,78 @@ function SidebarContent({ isCollapsed, setTheme, session, pathname }: SidebarCon
   );
 }
 
+// Add this new component before SessionNavBar
+function MobileTabBar({ pathname, session }: { pathname: string; session: Session | null }) {
+  return (
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+      <nav className="flex justify-around items-center h-16 px-4">
+        {navigationItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex flex-col items-center justify-center w-16 py-2 rounded-md transition",
+              pathname === item.href 
+                ? "text-primary" 
+                : "text-muted-foreground hover:text-primary"
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+            <span className="text-xs mt-1">{item.title}</span>
+          </Link>
+        ))}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger className="flex flex-col items-center justify-center w-16 py-2">
+            <div className="relative w-5 h-5 rounded-full overflow-hidden ring-1 ring-primary">
+              <Image
+                alt="User"
+                src={session?.user?.image || "/placeholder.svg"}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <span className="text-xs mt-1">Compte</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="end" className="mb-2">
+            <div className="flex flex-row items-center gap-2 p-2">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary">
+                <Image
+                  alt="User"
+                  src={session?.user?.image || "/placeholder.svg"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-medium">
+                  {session?.user?.name || "User"}
+                </span>
+                <span className="line-clamp-1 text-xs text-muted-foreground">
+                  {session?.user?.email || ""}
+                </span>
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="flex items-center gap-2">
+              <Link href="/account">
+                <UserCircle className="h-4 w-4" /> Profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="flex items-center gap-2"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+            >
+              <LogOut className="h-4 w-4" /> Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </nav>
+    </div>
+  );
+}
+
 export function SessionNavBar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
   const { setTheme } = useTheme();
@@ -256,20 +306,10 @@ export function SessionNavBar() {
   // Sidebar classes responsive
   const sidebarBase = "sidebar fixed left-0 top-0 z-40 h-full shrink-0 border-r border-border bg-card text-card-foreground transition-all duration-200";
   const sidebarDesktop = "hidden md:block w-[3.05rem] hover:w-[15rem]";
-  const sidebarMobile = mobileOpen ? "block w-60 z-50 bg-card/95" : "hidden";
 
   return (
     <>
-      {/* Hamburger button for mobile */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-50 bg-card p-2 rounded-full shadow border border-border"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Ouvrir le menu"
-      >
-        <Menu className="h-6 w-6" />
-      </button>
-
-      {/* Sidebar for desktop */}
+      {/* Desktop Sidebar */}
       <motion.div
         className={cn(sidebarBase, sidebarDesktop)}
         initial={isCollapsed ? "closed" : "open"}
@@ -282,24 +322,8 @@ export function SessionNavBar() {
         <SidebarContent isCollapsed={isCollapsed} setTheme={setTheme} session={session} pathname={pathname} />
       </motion.div>
 
-      {/* Sidebar for mobile overlay */}
-      <motion.div
-        className={cn(sidebarBase, sidebarMobile)}
-        initial={mobileOpen ? "open" : "closed"}
-        animate={mobileOpen ? "open" : "closed"}
-        variants={sidebarVariants}
-        transition={transitionProps}
-      >
-        {/* Close button */}
-        <button
-          className="absolute top-4 right-4 z-50 bg-card p-2 rounded-full shadow border border-border md:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-label="Fermer le menu"
-        >
-          <Menu className="h-6 w-6 rotate-90" />
-        </button>
-        <SidebarContent isCollapsed={false} setTheme={setTheme} session={session} pathname={pathname} />
-      </motion.div>
+      {/* Mobile TabBar */}
+      <MobileTabBar pathname={pathname} session={session} />
     </>
   );
 }

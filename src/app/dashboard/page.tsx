@@ -1,13 +1,12 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { DashboardStats } from "@/components/pages/dashboard-stats"
 import { CurrentMonthDetails } from './_components/current-month-details'
-import { MonthlyExpensesChartCard } from './_components/monthly-expenses-chart-card'
-import { UpcomingRenewalsSection } from './_components/upcoming-renewals-section'
 import { MonthlyTotalsList } from './_components/monthly-totals-list'
 import { PDFDownloadClientButton } from './_components/pdf-download-client-button'
 import { getExpenseChartData } from "@/app/actions/stats"
 import { Suspense } from 'react'
 import { Skeleton } from "@/components/ui/skeleton"
+import { CalendarCard } from './_components/calendar-card'
 
 export default async function DashboardPage() {
   // Fetch data directly on the server
@@ -31,23 +30,24 @@ export default async function DashboardPage() {
           <DashboardStats />
         </Suspense>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr,300px] gap-2 sm:gap-4">
-        <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-[400px] w-full" /></CardContent></Card>}>
-          <MonthlyExpensesChartCard />
-        </Suspense>
 
-        <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[300px] w-full" /></CardContent></Card>}>
-          <CurrentMonthDetails initialChartData={chartData} />
+      <div className="w-full">
+        <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[400px] w-full" /></CardContent></Card>}>
+          <CalendarCard />
         </Suspense>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-        <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-[150px] w-full" /></CardContent></Card>}>
-          <UpcomingRenewalsSection />
+        <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[400px] w-full" /></CardContent></Card>}>
+          <div className="h-full min-h-[400px]">
+            <CurrentMonthDetails initialChartData={chartData} />
+          </div>
         </Suspense>
 
-        <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[150px] w-full" /></CardContent></Card>}>
-          <MonthlyTotalsList initialChartData={chartData} />
+        <Suspense fallback={<Card><CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader><CardContent><Skeleton className="h-[400px] w-full" /></CardContent></Card>}>
+          <div className="h-full min-h-[400px]">
+            <MonthlyTotalsList initialChartData={chartData} />
+          </div>
         </Suspense>
       </div>
     </div>

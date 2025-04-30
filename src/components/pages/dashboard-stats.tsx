@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { getDashboardStats, getExpenseChartData } from "@/app/actions/stats"
 
 type Subscription = {
@@ -53,48 +53,32 @@ export function DashboardStats() {
   }
 
   return (
-    <>
-      <Card className="flex-1">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Dépenses annuelles
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.totalAnnualExpense.toFixed(2)} €</div>
-        </CardContent>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+      <Card className="p-3 sm:p-4">
+        <div className="space-y-1">
+          <p className="text-xs sm:text-sm text-muted-foreground">Dépenses annuelles</p>
+          <p className="text-lg sm:text-2xl font-bold">{stats.totalAnnualExpense.toFixed(2)} €</p>
+        </div>
       </Card>
-      <Card className="flex-1">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Dépenses mensuelles moyennes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.averageMonthlyExpense.toFixed(2)} €</div>
-        </CardContent>
+      <Card className="p-3 sm:p-4">
+        <div className="space-y-1">
+          <p className="text-xs sm:text-sm text-muted-foreground">Moyenne mensuelle</p>
+          <p className="text-lg sm:text-2xl font-bold">{stats.averageMonthlyExpense.toFixed(2)} €</p>
+        </div>
       </Card>
-      <Card className="flex-1">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Dépenses du mois en cours
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.currentMonthExpense.toFixed(2)} €</div>
-        </CardContent>
+      <Card className="p-3 sm:p-4">
+        <div className="space-y-1">
+          <p className="text-xs sm:text-sm text-muted-foreground">Ce mois</p>
+          <p className="text-lg sm:text-2xl font-bold">{stats.currentMonthExpense.toFixed(2)} €</p>
+        </div>
       </Card>
-      <Card className="flex-1">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Abonnements actifs
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-        </CardContent>
+      <Card className="p-3 sm:p-4">
+        <div className="space-y-1">
+          <p className="text-xs sm:text-sm text-muted-foreground">Abonnements actifs</p>
+          <p className="text-lg sm:text-2xl font-bold">{stats.activeSubscriptions}</p>
+        </div>
       </Card>
-    </>
+    </div>
   )
 }
 
