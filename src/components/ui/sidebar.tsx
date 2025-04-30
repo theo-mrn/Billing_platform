@@ -230,38 +230,30 @@ function SidebarContent({ isCollapsed, setTheme, session, pathname }: SidebarCon
 // Add this new component before SessionNavBar
 function MobileTabBar({ pathname, session }: { pathname: string; session: Session | null }) {
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-      <nav className="flex justify-around items-center h-16 px-4">
-        {navigationItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center justify-center w-16 py-2 rounded-md transition",
-              pathname === item.href 
-                ? "text-primary" 
-                : "text-muted-foreground hover:text-primary"
-            )}
-          >
-            <item.icon className="h-5 w-5" />
-            <span className="text-xs mt-1">{item.title}</span>
-          </Link>
-        ))}
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger className="flex flex-col items-center justify-center w-16 py-2">
-            <div className="relative w-5 h-5 rounded-full overflow-hidden ring-1 ring-primary">
-              <Image
-                alt="User"
-                src={session?.user?.image || "/placeholder.svg"}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <span className="text-xs mt-1">Compte</span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="end" className="mb-2">
-            <div className="flex flex-row items-center gap-2 p-2">
-              <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary">
+    <>
+      {/* Spacer div to prevent content from being hidden behind the tabbar */}
+      <div className="md:hidden h-20 w-full" />
+      
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border z-[100]">
+        <nav className="flex justify-around items-center h-16 px-4">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center w-16 py-2 rounded-md transition z-[100]",
+                pathname === item.href 
+                  ? "text-primary" 
+                  : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs mt-1">{item.title}</span>
+            </Link>
+          ))}
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger className="flex flex-col items-center justify-center w-16 py-2 z-[100]">
+              <div className="relative w-5 h-5 rounded-full overflow-hidden ring-1 ring-primary">
                 <Image
                   alt="User"
                   src={session?.user?.image || "/placeholder.svg"}
@@ -269,31 +261,44 @@ function MobileTabBar({ pathname, session }: { pathname: string; session: Sessio
                   className="object-cover"
                 />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-medium">
-                  {session?.user?.name || "User"}
-                </span>
-                <span className="line-clamp-1 text-xs text-muted-foreground">
-                  {session?.user?.email || ""}
-                </span>
+              <span className="text-xs mt-1">Compte</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="end" className="mb-2 z-[100]">
+              <div className="flex flex-row items-center gap-2 p-2">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary">
+                  <Image
+                    alt="User"
+                    src={session?.user?.image || "/placeholder.svg"}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-medium">
+                    {session?.user?.name || "User"}
+                  </span>
+                  <span className="line-clamp-1 text-xs text-muted-foreground">
+                    {session?.user?.email || ""}
+                  </span>
+                </div>
               </div>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="flex items-center gap-2">
-              <Link href="/account">
-                <UserCircle className="h-4 w-4" /> Profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="flex items-center gap-2"
-              onClick={() => signOut({ callbackUrl: "/login" })}
-            >
-              <LogOut className="h-4 w-4" /> Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </nav>
-    </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="flex items-center gap-2">
+                <Link href="/account">
+                  <UserCircle className="h-4 w-4" /> Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-2"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+              >
+                <LogOut className="h-4 w-4" /> Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </nav>
+      </div>
+    </>
   );
 }
 

@@ -516,19 +516,40 @@ export default function FinancePage() {
         </div>
 
         {activeTab === "subscriptions" && (
-          <Tabs value={categoryFilter} onValueChange={setCategoryFilter} className="mt-4">
-            <TabsList>
-              {categories.map((category) => (
-                <TabsTrigger key={category} value={category}>
-                  {category === "all" ? "Tous" : category}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="mt-4">
+            {/* Desktop: Tabs */}
+            <div className="hidden md:block">
+              <Tabs value={categoryFilter} onValueChange={setCategoryFilter}>
+                <TabsList>
+                  {categories.map((category) => (
+                    <TabsTrigger key={category} value={category}>
+                      {category === "all" ? "Tous" : category}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* Mobile: Select */}
+            <div className="md:hidden">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Filtrer par catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category === "all" ? "Toutes les catégories" : category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         )}
 
-        <Card className="mt-4 w-full p-2 sm:p-6">
-          <CardHeader>
+        <Card className="mt-4 w-full p-0 sm:p-6">
+          <CardHeader className="p-2 sm:p-6">
             <CardTitle className="text-base sm:text-xl">
               {activeTab === "subscriptions" ? "Liste des abonnements" : "Liste des revenus"}
             </CardTitle>
@@ -538,25 +559,25 @@ export default function FinancePage() {
                 : "Gérez vos revenus mensuels."}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 sm:p-6">
             {activeTab === "subscriptions" ? (
               <div className="w-full">
                 <Table className="w-full text-xs sm:text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[50%] sm:w-auto">Service</TableHead>
+                      <TableHead className="w-[50%] sm:w-auto px-2 sm:px-4">Service</TableHead>
                       <TableHead className="hidden sm:table-cell">Catégorie</TableHead>
-                      <TableHead className="w-[25%] sm:w-auto">Montant</TableHead>
+                      <TableHead className="w-[25%] sm:w-auto px-2 sm:px-4">Montant</TableHead>
                       <TableHead className="hidden sm:table-cell">Fréquence</TableHead>
                       <TableHead className="hidden sm:table-cell">Prochain renouvellement</TableHead>
                       <TableHead className="hidden sm:table-cell">Statut</TableHead>
-                      <TableHead className="w-[25%] sm:w-[100px] text-right">Actions</TableHead>
+                      <TableHead className="w-[25%] sm:w-[100px] text-right px-2 sm:px-4">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredSubscriptions.map((subscription) => (
                       <TableRow key={subscription.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium px-2 sm:px-4">
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6 sm:h-8 sm:w-8 shrink-0">
                               <AvatarImage src={subscription.logo || undefined} alt={subscription.name} />
@@ -584,7 +605,7 @@ export default function FinancePage() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">{subscription.category}</TableCell>
-                        <TableCell className="text-right sm:text-left">{subscription.amount.toFixed(2)} €</TableCell>
+                        <TableCell className="text-right sm:text-left px-2 sm:px-4">{subscription.amount.toFixed(2)} €</TableCell>
                         <TableCell className="hidden sm:table-cell">
                           {subscription.frequency === "MONTHLY"
                             ? "Mensuel"
@@ -614,7 +635,7 @@ export default function FinancePage() {
                               : "En pause"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right p-2 sm:p-4">
+                        <TableCell className="text-right p-0 sm:p-4">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -623,7 +644,6 @@ export default function FinancePage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem onClick={() => setEditingSubscription(subscription)}>
                                 Modifier
                               </DropdownMenuItem>
@@ -647,26 +667,26 @@ export default function FinancePage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table className="min-w-[700px] text-xs sm:text-sm">
+                <Table className="w-full text-xs sm:text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Montant</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="px-2 sm:px-4">Source</TableHead>
+                      <TableHead className="px-2 sm:px-4">Date</TableHead>
+                      <TableHead className="px-2 sm:px-4">Montant</TableHead>
+                      <TableHead className="hidden sm:table-cell">Description</TableHead>
+                      <TableHead className="text-right px-2 sm:px-4">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredIncomes.map((income) => (
                       <TableRow key={income.id}>
-                        <TableCell className="font-medium">{income.source}</TableCell>
-                        <TableCell>
-                          {format(new Date(income.transferDate), "PPP", { locale: fr })}
+                        <TableCell className="font-medium px-2 sm:px-4">{income.source}</TableCell>
+                        <TableCell className="px-2 sm:px-4">
+                          {format(new Date(income.transferDate), "dd/MM/yy", { locale: fr })}
                         </TableCell>
-                        <TableCell>{income.amount.toFixed(2)} €</TableCell>
-                        <TableCell>{income.description || "-"}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="px-2 sm:px-4">{income.amount.toFixed(2)} €</TableCell>
+                        <TableCell className="hidden sm:table-cell">{income.description || "-"}</TableCell>
+                        <TableCell className="text-right p-0 sm:p-4">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="h-8 w-8 p-0">
