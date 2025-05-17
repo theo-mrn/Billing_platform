@@ -54,7 +54,7 @@ export function Header({ variant = 'default', handleScroll, refs }: HeaderProps)
           )}
           
           {variant === 'dashboard' ? (
-            <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
+            <Link href="/projects" className="flex items-center gap-2 text-lg font-semibold">
               <Package className="h-6 w-6" />
               <span>FacturePro</span>
             </Link>

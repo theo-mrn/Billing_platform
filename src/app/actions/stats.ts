@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import {  subMonths } from "date-fns"
+import { startOfMonth, endOfMonth, format } from "date-fns"
+import { fr } from "date-fns/locale"
 
 export async function getDashboardStats() {
   const session = await getServerSession(authOptions)
@@ -174,87 +176,74 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getExpenseChartData(year: number = new Date().getFullYear()) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.email) throw new Error("Non authentifié")
+export async function getExpenseChartData() {
+  try {
+    const session = await getServerSession(authOptions)
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  })
-
-  if (!user) {
-    throw new Error("Utilisateur non trouvé")
-  }
-
-  // Récupérer tous les abonnements actifs
-  const subscriptions = await prisma.subscription.findMany({
-    where: {
-      userId: user.id,
-      status: "ACTIVE",
-    },
-  })
-
-  // Initialiser les dépenses mensuelles à 0 pour chaque mois
-  const monthlyExpenses = Array.from({ length: 12 }, (_, i) => ({
-    month: new Date(year, i, 1).toLocaleString("fr-FR", { month: "long" }),
-    amount: 0,
-    subscriptions: [] as Array<{
-      name: string
-      amount: number
-      category: string
-    }>,
-  }))
-
-  // Pour chaque abonnement, calculer les dates de renouvellement pour l'année
-  subscriptions.forEach(sub => {
-    const renewalDate = new Date(sub.renewalDate)
-    const startYear = renewalDate.getFullYear()
-    const startMonth = renewalDate.getMonth()
-
-    // Calculer les mois de renouvellement selon la fréquence
-    let renewalMonths: number[] = []
-    
-    switch (sub.frequency) {
-      case "MONTHLY":
-        renewalMonths = Array.from({ length: 12 }, (_, i) => i)
-        break
-      
-      case "QUARTERLY":
-        for (let month = 0; month < 12; month += 3) {
-          const adjustedMonth = (startMonth + month) % 12
-          renewalMonths.push(adjustedMonth)
-        }
-        break
-      
-      case "SEMI_ANNUAL":
-        for (let month = 0; month < 12; month += 6) {
-          const adjustedMonth = (startMonth + month) % 12
-          renewalMonths.push(adjustedMonth)
-        }
-        break
-      
-      case "ANNUAL":
-        if (year === startYear) {
-          renewalMonths = [startMonth]
-        }
-        break
+    if (!session?.user?.email) {
+      throw new Error("Non authentifié")
     }
 
-    // Ajouter le montant aux mois de renouvellement
-    renewalMonths.forEach(month => {
-      const renewalDateForMonth = new Date(year, month, renewalDate.getDate())
-      if (renewalDateForMonth >= renewalDate) {
-        monthlyExpenses[month].amount += sub.amount
-        monthlyExpenses[month].subscriptions.push({
-          name: sub.name,
-          amount: sub.amount,
-          category: sub.category,
-        })
-      }
+    // Récupérer l'organisation de l'utilisateur
+    const userWithOrg = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        organizations: {
+          take: 1,
+          include: {
+            organization: true,
+          },
+        },
+      },
     })
-  })
 
-  return monthlyExpenses
+    if (!userWithOrg?.organizations[0]?.organization?.id) {
+      throw new Error("Aucune organisation trouvée")
+    }
+
+    const organizationId = userWithOrg.organizations[0].organization.id
+
+    // Récupérer les 6 derniers mois
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date()
+      date.setMonth(date.getMonth() - i)
+      return {
+        start: startOfMonth(date),
+        end: endOfMonth(date),
+        label: format(date, "MMMM yyyy", { locale: fr }),
+      }
+    }).reverse()
+
+    // Récupérer les dépenses pour chaque mois
+    const expensesByMonth = await Promise.all(
+      months.map(async (month) => {
+        const expenses = await prisma.expense.findMany({
+          where: {
+            organizationId,
+            date: {
+              gte: month.start,
+              lte: month.end,
+            },
+          },
+          select: {
+            amount: true,
+          },
+        })
+
+        const total = expenses.reduce((sum, expense) => sum + expense.amount, 0)
+
+        return {
+          month: month.label,
+          total,
+        }
+      })
+    )
+
+    return expensesByMonth
+  } catch (error) {
+    console.error("Error fetching expense chart data:", error)
+    return []
+  }
 }
 
 export async function getCategoryStats() {

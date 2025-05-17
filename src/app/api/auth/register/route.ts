@@ -31,18 +31,39 @@ export async function POST(req: Request) {
     // Hacher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Créer l'utilisateur
-    const newUser = await prisma.user.create({
-      data: {
-        name: name || email.split('@')[0], // Utilise la partie locale de l'email comme nom par défaut
-        email,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
+    // Créer l'utilisateur et son organisation par défaut dans une transaction
+    const result = await prisma.$transaction(async (prisma) => {
+      // Créer l'utilisateur
+      const newUser = await prisma.user.create({
+        data: {
+          name: name || email.split('@')[0],
+          email,
+          password: hashedPassword,
+        },
+      });
+
+      // Créer une organisation par défaut pour l'utilisateur
+      const organization = await prisma.organization.create({
+        data: {
+          name: `${newUser.name}'s Organization`,
+          description: `Default organization for ${newUser.name}`,
+          users: {
+            create: {
+              userId: newUser.id,
+              role: 'OWNER'
+            }
+          },
+          projects: {
+            create: {
+              name: 'Default Project',
+              description: 'Default project created automatically',
+              isDefault: true
+            }
+          }
+        },
+      });
+
+      return { user: newUser, organization };
     });
 
     // Ajouter l'utilisateur à l'audience Resend
@@ -59,7 +80,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { 
-        user: newUser,
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+        },
+        organization: result.organization,
         message: "Inscription réussie"
       },
       { status: 201 }

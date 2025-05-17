@@ -63,7 +63,7 @@ export function Hero({ handleScroll, refs }: HeroProps) {
               className="flex flex-col sm:flex-row gap-4"
             >
               {session ? (
-                <Link href="/dashboard">
+                <Link href="/projects">
                   <HoverBorderGradient className="px-6">
                     Accéder à mon espace
                   </HoverBorderGradient>
@@ -87,7 +87,7 @@ export function Hero({ handleScroll, refs }: HeroProps) {
             className="relative max-w-2xl mx-auto overflow-hidden rounded-2xl"
           >
             <Image
-              src="/images/dashboard.jpg"
+              src="/images/projects.jpg"
               alt="Portrait"
               className="object-contain w-full h-full filter brightness-100"
               width={1600}

@@ -26,33 +26,28 @@ import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useTheme, Theme } from "@/lib/themes";
 import { Session } from "next-auth";
+import { XPDisplay } from "./XPDisplay";
+import { useXP } from "@/hooks/useXP";
+import { OrganizationSelector } from "./OrganizationSelector";
+
 
 const navigationItems = [
   {
     title: "Home",
-    href: "/dashboard",
+    href: "/projects",
     icon: Home,
   },
   {
-    title: "Abonnements",
-    href: "/dashboard/subscriptions",
+    title: "Organsation",
+    href: "/organization",
     icon: CreditCard,
   },
   {
-    title: "Rapports",
-    href: "/dashboard/reports",
+    title: "Mes projets",
+    href: "/projects/all",
     icon: BarChart3,
   },
 ];
-
-const sidebarVariants = {
-  open: {
-    width: "15rem",
-  },
-  closed: {
-    width: "4rem",
-  },
-};
 
 const contentVariants = {
   open: { display: "block", opacity: 1 },
@@ -76,13 +71,6 @@ const variants = {
   },
 };
 
-const transitionProps = {
-  type: "tween",
-  ease: "easeOut",
-  duration: 0.2,
-  staggerChildren: 0.1,
-};
-
 const staggerVariants = {
   open: {
     transition: { staggerChildren: 0.03, delayChildren: 0.02 },
@@ -94,9 +82,12 @@ interface SidebarContentProps {
   setTheme: (theme: Theme) => void;
   session: Session | null;
   pathname: string;
+  onSelectOpen: (isOpen: boolean) => void;
 }
 
-function SidebarContent({ isCollapsed, setTheme, session, pathname }: SidebarContentProps) {
+function SidebarContent({ isCollapsed, setTheme, session, pathname, onSelectOpen }: SidebarContentProps) {
+  const { xp, level, isLoading } = useXP();
+
   return (
     <motion.div
       className="relative z-40 flex h-full shrink-0 flex-col"
@@ -104,7 +95,16 @@ function SidebarContent({ isCollapsed, setTheme, session, pathname }: SidebarCon
     >
       <motion.ul variants={staggerVariants} className="flex h-full flex-col">
         <div className="flex grow flex-col items-center">
-          <div className="flex h-[54px] w-full shrink-0 border-b border-border p-4" />
+          <div className="flex h-[54px] w-full shrink-0 items-center justify-between border-b border-border px-4">
+            {!isCollapsed && (
+              <OrganizationSelector isCollapsed={isCollapsed} onOpenChange={onSelectOpen} />
+            )}
+          </div>
+          {!isCollapsed && !isLoading && (
+            <div className="w-full px-2 py-4">
+              <XPDisplay xp={xp} level={level} />
+            </div>
+          )}
           <div className="flex h-full w-full flex-col">
             <div className="flex grow flex-col gap-4">
               <ScrollArea className="h-16 grow p-2">
@@ -144,13 +144,10 @@ function SidebarContent({ isCollapsed, setTheme, session, pathname }: SidebarCon
                   </DropdownMenuTrigger>
                   <DropdownMenuContent sideOffset={5}>
                     <DropdownMenuItem onClick={() => setTheme('dark')}>
-                      <Moon className="h-4 w-4 mr-2" /> Dark
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTheme('dark2')}>
-                      <Moon className="h-4 w-4 mr-2" /> Dark 2
+                      <Moon className="h-4 w-4 mr-2" /> Theme 1
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTheme('dark3')}>
-                      <Moon className="h-4 w-4 mr-2" /> Dark 3
+                      <Moon className="h-4 w-4 mr-2" /> Theme 2
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -304,6 +301,7 @@ function MobileTabBar({ pathname, session }: { pathname: string; session: Sessio
 
 export function SessionNavBar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
   const { setTheme } = useTheme();
@@ -312,20 +310,44 @@ export function SessionNavBar() {
   const sidebarBase = "sidebar fixed left-0 top-0 z-40 h-full shrink-0 border-r border-border bg-card text-card-foreground transition-all duration-200";
   const sidebarDesktop = "hidden md:block w-[3.05rem] hover:w-[15rem]";
 
+  const handleMouseEnter = () => {
+    setIsCollapsed(false);
+  };
+
+  const handleSelectOpenChange = (open: boolean) => {
+    setIsSelectOpen(open);
+    if (open) {
+      setIsCollapsed(false);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    // Ne replie la sidebar que si le select n'est pas ouvert
+    if (!isSelectOpen) {
+      setIsCollapsed(true);
+    }
+  };
+
   return (
     <>
       {/* Desktop Sidebar */}
-      <motion.div
-        className={cn(sidebarBase, sidebarDesktop)}
-        initial={isCollapsed ? "closed" : "open"}
-        animate={isCollapsed ? "closed" : "open"}
-        variants={sidebarVariants}
-        transition={transitionProps}
-        onMouseEnter={() => setIsCollapsed(false)}
-        onMouseLeave={() => setIsCollapsed(true)}
+      <div
+        className={cn(
+          sidebarBase, 
+          sidebarDesktop,
+          isSelectOpen ? "w-[15rem]" : ""
+        )}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
-        <SidebarContent isCollapsed={isCollapsed} setTheme={setTheme} session={session} pathname={pathname} />
-      </motion.div>
+        <SidebarContent
+          isCollapsed={isCollapsed}
+          setTheme={setTheme}
+          session={session}
+          pathname={pathname}
+          onSelectOpen={handleSelectOpenChange}
+        />
+      </div>
 
       {/* Mobile TabBar */}
       <MobileTabBar pathname={pathname} session={session} />

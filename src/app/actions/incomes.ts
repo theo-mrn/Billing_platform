@@ -75,7 +75,7 @@ export async function addIncome(data: {
       },
     })
     console.log("Revenu créé avec succès:", income)
-    revalidatePath("/dashboard/income")
+    revalidatePath("/projects/income")
     return income
   } catch (error) {
     console.error("Erreur détaillée lors de l'ajout du revenu:", error)
@@ -129,7 +129,7 @@ export async function updateIncome(id: string, data: {
       },
     })
     console.log("Revenu mis à jour avec succès:", updatedIncome)
-    revalidatePath("/dashboard/income")
+    revalidatePath("/projects/income")
     return updatedIncome
   } catch (error) {
     console.error("Erreur détaillée lors de la mise à jour du revenu:", error)
@@ -162,7 +162,7 @@ export async function deleteIncome(id: string) {
       },
     })
     console.log("Revenu supprimé avec succès")
-    revalidatePath("/dashboard/income")
+    revalidatePath("/projects/income")
   } catch (error) {
     console.error("Erreur détaillée lors de la suppression du revenu:", error)
     throw new Error("Impossible de supprimer le revenu")

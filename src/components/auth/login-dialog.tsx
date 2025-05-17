@@ -38,7 +38,7 @@ export function LoginDialog() {
       if (result?.error) {
         setError("Email ou mot de passe incorrect")
       } else {
-        router.push("/dashboard")
+        router.push("/projects")
         router.refresh()
       }
     } catch {
@@ -51,7 +51,7 @@ export function LoginDialog() {
   const handleGoogleSignIn = async () => {
     try {
       await signIn("google", {
-        callbackUrl: "/dashboard",
+        callbackUrl: "/projects",
         redirect: true,
       })
     } catch (error) {

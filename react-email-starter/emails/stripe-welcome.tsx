@@ -39,7 +39,7 @@ export const StripeWelcomeEmail = () => (
             You can view your payments and a variety of other information about
             your account right from your dashboard.
           </Text>
-          <Button style={button} href="https://dashboard.stripe.com/login">
+          <Button style={button} href="https://projects.stripe.com/login">
             View your Stripe Dashboard
           </Button>
           <Hr style={hr} />
@@ -55,14 +55,14 @@ export const StripeWelcomeEmail = () => (
             use your live{' '}
             <Link
               style={anchor}
-              href="https://dashboard.stripe.com/login?redirect=%2Fapikeys"
+              href="https://projects.stripe.com/login?redirect=%2Fapikeys"
             >
               API keys
             </Link>{' '}
             instead of your test API keys. Your account can simultaneously be
             used for both test and live requests, so you can continue testing
             while accepting live payments. Check out our{' '}
-            <Link style={anchor} href="https://stripe.com/docs/dashboard">
+            <Link style={anchor} href="https://stripe.com/docs/projects">
               tutorial about account basics
             </Link>
             .

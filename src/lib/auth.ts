@@ -5,123 +5,194 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
-import { Session } from "next-auth";
-import { type JWT } from "next-auth/jwt";
+import type { OrganizationRole } from "./permissions";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+if (!process.env.NEXTAUTH_URL) {
+  console.error("NEXTAUTH_URL is not set");
+}
+
+if (!process.env.NEXTAUTH_SECRET) {
+  console.error("NEXTAUTH_SECRET is not set");
+}
+
+if (!process.env.GOOGLE_CLIENT_ID) {
+  throw new Error('Missing GOOGLE_CLIENT_ID');
+}
+
+if (!process.env.GOOGLE_CLIENT_SECRET) {
+  throw new Error('Missing GOOGLE_CLIENT_SECRET');
+}
 
 export const authOptions: NextAuthOptions = {
   debug: true,
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "email@example.com" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email et mot de passe requis");
+        }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            password: true,
+          where: {
+            email: credentials.email,
           },
         });
 
-        if (!user || !user.password) return null;
+        if (!user || !user.password) {
+          throw new Error("Email ou mot de passe incorrect");
+        }
 
-        const isValidPassword = await bcrypt.compare(credentials.password, user.password);
-        if (!isValidPassword) return null;
+        const isCorrectPassword = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
 
-        // Return user data without the password
-        const { id, email, name } = user;
-        return { id, email, name };
+        if (!isCorrectPassword) {
+          throw new Error("Email ou mot de passe incorrect");
+        }
+
+        return user;
       },
     }),
   ],
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }: { session: Session; token: JWT }) {
-      if (session.user) {
-        (session.user as { id: string }).id = token.id as string;
+    session: async ({ session, token }) => {
+      if (session?.user) {
+        session.user.id = token.sub as string;
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
-      console.log('SignIn callback:', { user, account, profile });
-      
-      if (!user.email) {
-        console.log('No email provided');
-        return false;
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.sub = user.id;
       }
-      
+      return token;
+    },
+    async signIn({ user, account, profile }) {
       try {
-        await resend.contacts.create({
-          email: user.email,
-          audienceId: process.env.RESEND_AUDIENCE_ID!,
-          unsubscribed: false,
+        console.log('SignIn callback:', { user, account, profile });
+        
+        if (!user.email) {
+          console.error('No email provided');
+          return false;
+        }
+
+        // Vérifier si l'utilisateur existe et récupérer ses organisations
+        let userWithOrg = await prisma.user.findUnique({
+          where: { email: user.email },
+          include: {
+            organizations: true,
+          },
         });
-        console.log(`Utilisateur ajouté à Resend: ${user.email}`);
+
+        // Si l'utilisateur n'existe pas, le créer
+        if (!userWithOrg) {
+          userWithOrg = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name || user.email.split('@')[0],
+              image: user.image,
+            },
+            include: {
+              organizations: true,
+            },
+          });
+          console.log('Created new user:', userWithOrg.email);
+        }
+
+        // Si l'utilisateur n'a pas d'organisation, en créer une par défaut
+        if (userWithOrg.organizations.length === 0) {
+          try {
+            await prisma.organization.create({
+              data: {
+                name: `${userWithOrg.name || userWithOrg.email?.split('@')[0]}'s Organization`,
+                description: `Default organization for ${userWithOrg.name || userWithOrg.email}`,
+                users: {
+                  create: {
+                    userId: userWithOrg.id,
+                    role: 'OWNER' as OrganizationRole
+                  }
+                },
+                projects: {
+                  create: {
+                    name: 'Default Project',
+                    description: 'Default project created automatically',
+                    isDefault: true
+                  }
+                }
+              },
+            });
+            console.log('Created default organization for user:', userWithOrg.email);
+          } catch (orgError) {
+            console.error('Error creating organization:', orgError);
+            // Continue même si la création de l'organisation échoue
+          }
+        }
+        
+        try {
+          await resend.contacts.create({
+            email: user.email,
+            audienceId: process.env.RESEND_AUDIENCE_ID!,
+            unsubscribed: false,
+          });
+          console.log(`Utilisateur ajouté à Resend: ${user.email}`);
+        } catch (resendError) {
+          console.error('Error adding user to Resend:', resendError);
+          // Continue même si l'ajout à Resend échoue
+        }
+        
         return true;
       } catch (error) {
-        console.error("Erreur lors de l'ajout à Resend", error);
-        return true; // Continue même si Resend échoue
+        console.error('Error in signIn callback:', error);
+        return false;
       }
     },
     async redirect({ url, baseUrl }) {
-      console.log('Redirect callback:', { url, baseUrl });
-      
-      // Use the environment variable for the base URL
-      const correctBaseUrl = process.env.NEXT_PUBLIC_APP_URL || baseUrl;
-      
-      // If the url is already an absolute URL that starts with the correct base URL
-      if (url.startsWith(correctBaseUrl)) {
-        console.log('Returning full URL:', url);
-        return url;
-      }
-      
-      // If the url is a relative path
-      if (url.startsWith('/')) {
-        const finalUrl = `${correctBaseUrl}${url}`;
-        console.log('Returning relative URL:', finalUrl);
-        return finalUrl;
-      }
-      
-      // If the url is an absolute URL to a different domain
-      if (url.startsWith('http')) {
-        // For development, ensure we're using the correct URL
+      try {
+        // Ensure baseUrl is correct for development
         if (process.env.NODE_ENV === 'development') {
-          const localUrl = url.replace(baseUrl, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
-          console.log('Returning local URL:', localUrl);
-          return localUrl;
+          baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
         }
-        console.log('Returning external URL:', url);
-        return url;
+        
+        console.log('Redirect callback:', { url, baseUrl });
+        
+        // If relative URL, make it absolute
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`;
+        }
+        
+        // If URL is already absolute, return it
+        if (url.startsWith('http')) {
+          return url;
+        }
+        
+        // Default to baseUrl
+        return baseUrl;
+      } catch (error) {
+        console.error("Error in redirect callback:", error);
+        return baseUrl;
       }
-      
-      // Default fallback
-      console.log('Returning baseUrl:', correctBaseUrl);
-      return correctBaseUrl;
     },
   },
-  session: { strategy: "jwt" as const },
+  session: { 
+    strategy: "jwt" as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 jours
+  },
   secret: process.env.NEXTAUTH_SECRET,
 }; 

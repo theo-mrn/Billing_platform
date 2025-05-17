@@ -61,7 +61,7 @@ export async function addSubscription(data: {
     },
   })
 
-  revalidatePath("/dashboard/subscriptions")
+  revalidatePath("/projects/subscriptions")
   return subscription
 }
 
@@ -149,5 +149,5 @@ export async function deleteSubscription(id: string) {
     },
   })
 
-  revalidatePath("/dashboard/subscriptions")
+  revalidatePath("/projects/subscriptions")
 } 

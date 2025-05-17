@@ -1,0 +1,73 @@
+2025-05-14T20:20:09.634Z - POST - Creating module for project cmaoaosx50007vow0wh4dcp9l with data: {"name":"deaz","description":"daze","type":"todo"}
+2025-05-14T20:20:09.638Z - POST - Error: 
+Invalid `prisma.module.create()` invocation:
+
+{
+  data: {
+    name: "deaz",
+    description: "daze",
+    type: "todo",
+    isActive: true,
+    settings: {},
+    ~~~~~~~~
+    project: {
+      connect: {
+        id: "cmaoaosx50007vow0wh4dcp9l"
+      }
+    },
+?   id?: String,
+?   createdAt?: DateTime,
+?   updatedAt?: DateTime
+  }
+}
+
+Unknown argument `settings`. Available options are marked with ?.
+PrismaClientValidationError: 
+Invalid `prisma.module.create()` invocation:
+
+{
+  data: {
+    name: "deaz",
+    description: "daze",
+    type: "todo",
+    isActive: true,
+    settings: {},
+    ~~~~~~~~
+    project: {
+      connect: {
+        id: "cmaoaosx50007vow0wh4dcp9l"
+      }
+    },
+?   id?: String,
+?   createdAt?: DateTime,
+?   updatedAt?: DateTime
+  }
+}
+
+Unknown argument `settings`. Available options are marked with ?.
+    at An (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/@prisma/client/runtime/library.js:29:1363)
+    at zn.handleRequestError (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/@prisma/client/runtime/library.js:121:7102)
+    at zn.handleAndLogRequestError (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/@prisma/client/runtime/library.js:121:6784)
+    at zn.request (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/@prisma/client/runtime/library.js:121:6491)
+    at async l (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/@prisma/client/runtime/library.js:130:9778)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/projects/[id]/modules/route.ts:120:27)
+    at async AppRouteRouteModule.do (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:26:34112)
+    at async AppRouteRouteModule.handle (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:26:41338)
+    at async doRender (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/base-server.js:1513:42)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/base-server.js:1915:28)
+    at async DevServer.renderPageComponent (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/base-server.js:2403:24)
+    at async DevServer.renderToResponseImpl (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/base-server.js:2440:32)
+    at async DevServer.pipeImpl (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/base-server.js:1007:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/next-server.js:305:17)
+    at async DevServer.handleRequestImpl (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/base-server.js:899:17)
+    at async /Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/dev/next-dev-server.js:371:20
+    at async Span.traceAsyncFn (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/trace/trace.js:157:20)
+    at async DevServer.handleRequest (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/dev/next-dev-server.js:368:24)
+    at async invokeRender (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/lib/router-server.js:237:21)
+    at async handleRequest (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/lib/router-server.js:428:24)
+    at async requestHandlerImpl (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/lib/router-server.js:452:13)
+    at async Server.requestListener (/Users/theomorin/Developer/projets_web/YNER/Billing_platform/node_modules/next/dist/server/lib/start-server.js:158:13)
+2025-05-14T20:20:37.118Z - GET - Fetching modules for project cmaoaosx50007vow0wh4dcp9l
+2025-05-14T20:20:37.146Z - GET - Successfully retrieved 0 modules for project cmaoaosx50007vow0wh4dcp9l
+2025-05-14T20:20:42.987Z - POST - Creating module for project cmaoaosx50007vow0wh4dcp9l with data: {"name":"daz","description":"deadaz","type":"todo"}
+2025-05-14T20:20:42.999Z - POST - Successfully created module cmaodxzzi0001vonwntesex75 for project cmaoaosx50007vow0wh4dcp9l
