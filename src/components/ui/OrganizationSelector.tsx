@@ -61,12 +61,12 @@ export function OrganizationSelector({ isCollapsed, onOpenChange }: Organization
       onValueChange={setSelectedOrg}
       onOpenChange={onOpenChange}
     >
-      <SelectTrigger className="w-[200px]">
-        <SelectValue placeholder="Sélectionner une organisation" />
+      <SelectTrigger className="w-full bg-background hover:bg-accent rounded-lg">
+        <SelectValue placeholder="Sélectionner une organisation" className="text-sm font-medium" />
       </SelectTrigger>
-      <SelectContent className="z-[100]" sideOffset={0} align="start">
+      <SelectContent className="w-full min-w-[200px]" sideOffset={4} align="start">
         {organizations.map((org) => (
-          <SelectItem key={org.id} value={org.id}>
+          <SelectItem key={org.id} value={org.id} className="text-sm">
             {org.name}
           </SelectItem>
         ))}

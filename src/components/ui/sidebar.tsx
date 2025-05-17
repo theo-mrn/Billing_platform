@@ -27,7 +27,6 @@ import Image from "next/image";
 import { useTheme, Theme } from "@/lib/themes";
 import { Session } from "next-auth";
 import { XPDisplay } from "./XPDisplay";
-import { useXP } from "@/hooks/useXP";
 import { OrganizationSelector } from "./OrganizationSelector";
 
 
@@ -86,8 +85,6 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({ isCollapsed, setTheme, session, pathname, onSelectOpen }: SidebarContentProps) {
-  const { xp, level, isLoading } = useXP();
-
   return (
     <motion.div
       className="relative z-40 flex h-full shrink-0 flex-col"
@@ -100,10 +97,16 @@ function SidebarContent({ isCollapsed, setTheme, session, pathname, onSelectOpen
               <OrganizationSelector isCollapsed={isCollapsed} onOpenChange={onSelectOpen} />
             )}
           </div>
-          {!isCollapsed && !isLoading && (
-            <div className="w-full px-2 py-4">
-              <XPDisplay xp={xp} level={level} />
-            </div>
+          {!isCollapsed && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="w-full px-2 py-4"
+            >
+              <XPDisplay />
+            </motion.div>
           )}
           <div className="flex h-full w-full flex-col">
             <div className="flex grow flex-col gap-4">

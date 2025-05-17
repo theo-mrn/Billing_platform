@@ -132,7 +132,20 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
   const totalEst = tasks.length;
   const doneCount = doneTasks.length;
 
-  const markAsDone = (taskId: string) => {
+  // Ajout de la fonction pour gérer l'XP
+  const addXPForTaskCompletion = async () => {
+    try {
+      await fetch('/api/users/xp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ xpAmount: 50 })
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout d\'XP:', error);
+    }
+  };
+
+  const markAsDone = async (taskId: string) => {
     setCongratsTaskId(taskId);
     setShowCongrats(true);
   };
@@ -250,6 +263,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ statusId: doneStatus.id })
                     });
+                    await addXPForTaskCompletion();
                     setTasks(tasks.map(t => t.id === task.id ? { ...t, status: doneStatus } : t));
                     setShowCongrats(false);
                     setCongratsTaskId(null);
@@ -294,7 +308,9 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                   )}
                   <button
                     title="Marquer comme terminé"
-                    onClick={() => markAsDone(task.id)}
+                    onClick={async () => {
+                      markAsDone(task.id);
+                    }}
                     className="bg-primary hover:bg-primary/90 text-background rounded-full p-2 shadow"
                   >
                     <CheckCircle size={20} />
@@ -356,6 +372,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ statusId: doneStatus.id })
                     });
+                    await addXPForTaskCompletion();
                     setTasks(tasks.map(t => t.id === task.id ? { ...t, status: doneStatus } : t));
                     setShowCongrats(false);
                     setCongratsTaskId(null);

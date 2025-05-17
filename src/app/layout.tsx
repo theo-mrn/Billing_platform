@@ -22,9 +22,13 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon/image.png" />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${inter.className} w-full h-full`} suppressHydrationWarning>
         <Providers>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <div className="min-h-screen w-full">
+              {children}
+            </div>
+          </ThemeProvider>
         </Providers>
         <Toaster />
       </body>
