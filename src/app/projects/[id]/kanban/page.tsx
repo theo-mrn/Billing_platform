@@ -33,11 +33,21 @@ import { useState, useId, useEffect } from 'react';
 import type { FC } from 'react';
 import { useParams } from 'next/navigation';
 import { KanbanBoard as KanbanBoardType, KanbanStatus, KanbanTask, KanbanGroup, TaskPriority, User } from '@prisma/client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { DurationSelector } from "@/components/ui/DurationSelector";
 
 type KanbanTaskWithRelations = KanbanTask & {
   status: KanbanStatus;
   group?: KanbanGroup | null;
   assignedTo?: User | null;
+  durationHours?: number;
+  durationMinutes?: number;
 };
 
 const formatTimeLeft = (date: Date) => {
@@ -66,6 +76,18 @@ const getPriorityColor = (priority: TaskPriority) => {
   }
 };
 
+// Fonction utilitaire pour convertir les heures et minutes en secondes
+const timeToSeconds = (hours: number, minutes: number) => {
+  return (hours * 60 * 60) + (minutes * 60);
+};
+
+// Fonction utilitaire pour convertir les secondes en heures et minutes
+const secondsToTime = (seconds: number) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return { hours, minutes };
+};
+
 const KanbanPage: FC = () => {
   const params = useParams();
   const projectId = params.id as string;
@@ -84,12 +106,20 @@ const KanbanPage: FC = () => {
     groupName: string;
     plannedEndAt: Date;
     priority: TaskPriority;
+    recurrenceType: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
+    durationSeconds: number;
+    durationHours: number;
+    durationMinutes: number;
   }>({
     title: '',
     description: '',
     groupName: '',
     plannedEndAt: new Date(),
     priority: 'MEDIUM',
+    recurrenceType: 'NONE',
+    durationSeconds: 0,
+    durationHours: 0,
+    durationMinutes: 0,
   });
   const timeInputId = useId();
 
@@ -146,6 +176,8 @@ const KanbanPage: FC = () => {
     const status = statuses.find(s => s.name === selectedColumn);
     if (!status) return;
 
+    const totalDurationSeconds = timeToSeconds(newTask.durationHours, newTask.durationMinutes);
+
     try {
       const response = await fetch(`/api/projects/${projectId}/kanban/tasks`, {
         method: 'POST',
@@ -159,6 +191,8 @@ const KanbanPage: FC = () => {
           plannedEndAt: newTask.plannedEndAt,
           boardId: board.id,
           statusId: status.id,
+          recurrenceType: newTask.recurrenceType,
+          durationSeconds: totalDurationSeconds,
         }),
       });
 
@@ -171,6 +205,10 @@ const KanbanPage: FC = () => {
           groupName: '',
           plannedEndAt: new Date(),
           priority: 'MEDIUM',
+          recurrenceType: 'NONE',
+          durationSeconds: 0,
+          durationHours: 0,
+          durationMinutes: 0,
         });
         setIsDialogOpen(false);
       }
@@ -182,6 +220,11 @@ const KanbanPage: FC = () => {
   const handleUpdateTask = async () => {
     if (!editingTask) return;
 
+    const totalDurationSeconds = timeToSeconds(
+      parseInt(editingTask.durationHours?.toString() || '0'),
+      parseInt(editingTask.durationMinutes?.toString() || '0')
+    );
+
     try {
       const response = await fetch(`/api/projects/${projectId}/kanban/tasks/${editingTask.id}`, {
         method: 'PATCH',
@@ -189,13 +232,8 @@ const KanbanPage: FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: editingTask.title,
-          description: editingTask.description,
-          priority: editingTask.priority,
-          plannedEndAt: editingTask.plannedEndAt,
-          statusId: editingTask.statusId,
-          groupId: editingTask.groupId,
-          assignedToId: editingTask.assignedToId,
+          ...editingTask,
+          durationSeconds: totalDurationSeconds,
         }),
       });
 
@@ -210,6 +248,17 @@ const KanbanPage: FC = () => {
       console.error('Failed to update task:', error);
     }
   };
+
+  // const handleTaskClick = (task: KanbanTaskWithRelations) => {
+  //   const { hours, minutes } = secondsToTime(task.durationSeconds || 0);
+  //   setEditingTask({
+  //     ...task,
+  //     durationHours: hours,
+  //     durationMinutes: minutes,
+  //   });
+  //   setIsEditMode(false);
+  //   setIsDetailsDialogOpen(true);
+  // };
 
   if (!board || !statuses.length) {
     return <div>Loading...</div>;
@@ -327,6 +376,40 @@ const KanbanPage: FC = () => {
                   </Button>
                 ))}
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Récurrence</Label>
+              <Select
+                value={newTask.recurrenceType}
+                onValueChange={(value: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY") => 
+                  setNewTask({ ...newTask, recurrenceType: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner la récurrence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Aucune</SelectItem>
+                  <SelectItem value="DAILY">Quotidienne</SelectItem>
+                  <SelectItem value="WEEKLY">Hebdomadaire</SelectItem>
+                  <SelectItem value="MONTHLY">Mensuelle</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Durée estimée</Label>
+              <DurationSelector
+                hours={newTask.durationHours}
+                minutes={newTask.durationMinutes}
+                onDurationChange={(hours, minutes) => {
+                  setNewTask({
+                    ...newTask,
+                    durationHours: hours,
+                    durationMinutes: minutes,
+                    durationSeconds: timeToSeconds(hours, minutes)
+                  });
+                }}
+              />
             </div>
             <Button onClick={handleAddTask} className="w-full">
               Add Task
@@ -519,6 +602,70 @@ const KanbanPage: FC = () => {
                   </div>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <Label>Récurrence</Label>
+                {isEditMode ? (
+                  <Select
+                    value={editingTask?.recurrenceType}
+                    onValueChange={(value: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY") => {
+                      if (!editingTask) return;
+                      setEditingTask({
+                        ...editingTask,
+                        recurrenceType: value
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {editingTask?.recurrenceType === 'NONE' ? 'Aucune' :
+                         editingTask?.recurrenceType === 'DAILY' ? 'Quotidienne' :
+                         editingTask?.recurrenceType === 'WEEKLY' ? 'Hebdomadaire' : 'Mensuelle'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">Aucune</SelectItem>
+                      <SelectItem value="DAILY">Quotidienne</SelectItem>
+                      <SelectItem value="WEEKLY">Hebdomadaire</SelectItem>
+                      <SelectItem value="MONTHLY">Mensuelle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="p-3 rounded-md bg-muted/50 text-sm flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs px-2 py-1">
+                      {editingTask?.recurrenceType === 'NONE' ? 'Aucune' :
+                       editingTask?.recurrenceType === 'DAILY' ? 'Quotidienne' :
+                       editingTask?.recurrenceType === 'WEEKLY' ? 'Hebdomadaire' : 'Mensuelle'}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Durée estimée</Label>
+                {isEditMode ? (
+                  <DurationSelector
+                    hours={editingTask?.durationHours || 0}
+                    minutes={editingTask?.durationMinutes || 0}
+                    onDurationChange={(hours, minutes) => {
+                      if (!editingTask) return;
+                      setEditingTask({
+                        ...editingTask,
+                        durationHours: hours,
+                        durationMinutes: minutes,
+                        durationSeconds: timeToSeconds(hours, minutes)
+                      });
+                    }}
+                  />
+                ) : (
+                  <div className="p-3 rounded-md bg-muted/50 text-sm">
+                    {(() => {
+                      const { hours, minutes } = secondsToTime(editingTask?.durationSeconds || 0);
+                      return `${hours}h ${minutes}min`;
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
 
             {isEditMode ? (
@@ -595,7 +742,12 @@ const KanbanPage: FC = () => {
                       <Card 
                         className="p-4 min-h-16"
                         onDoubleClick={() => {
-                          setEditingTask(task);
+                          const { hours, minutes } = secondsToTime(task.durationSeconds || 0);
+                          setEditingTask({
+                            ...task,
+                            durationHours: hours,
+                            durationMinutes: minutes,
+                          });
                           setIsEditMode(false);
                           setIsDetailsDialogOpen(true);
                         }}

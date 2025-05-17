@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Pause, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 export default function Pomodoro() {
+  const { data: session } = useSession();
   const [isActive, setIsActive] = useState(false);
   const [time, setTime] = useState(60);
   const [isWorkTime, setIsWorkTime] = useState(true);
   const [workDuration, setWorkDuration] = useState(1);
   const [breakDuration, setBreakDuration] = useState(1);
   const [isBreakReady, setIsBreakReady] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -23,9 +26,11 @@ export default function Pomodoro() {
         setTime((prevTime) => prevTime - 1);
       }, 1000);
     } else if (time === 0 && isWorkTime) {
+      handleSessionEnd();
       setIsActive(false);
       setIsBreakReady(true);
     } else if (time === 0 && !isWorkTime) {
+      handleSessionEnd();
       setIsActive(false);
       setIsWorkTime(true);
       setTime(workDuration * 60);
@@ -35,10 +40,40 @@ export default function Pomodoro() {
   }, [isActive, time, isWorkTime, workDuration]);
 
   const toggleTimer = () => {
+    if (!isActive) {
+      setSessionStartTime(new Date());
+    } else {
+      handleSessionEnd();
+    }
     setIsActive(!isActive);
   };
 
+  const handleSessionEnd = async () => {
+    if (!session?.user?.email || !sessionStartTime) return;
+
+    const endTime = new Date();
+    const duration = Math.floor((endTime.getTime() - sessionStartTime.getTime()) / 1000);
+
+    try {
+      await fetch('/api/pomodoro/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startTime: sessionStartTime,
+          endTime,
+          duration,
+          type: isWorkTime ? 'WORK' : 'BREAK',
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to save pomodoro session:', error);
+    }
+  };
+
   const startBreak = () => {
+    setSessionStartTime(new Date());
     setIsWorkTime(false);
     setTime(breakDuration * 60);
     setIsBreakReady(false);

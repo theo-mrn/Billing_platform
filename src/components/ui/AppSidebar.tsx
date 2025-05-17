@@ -17,6 +17,7 @@ import {
   Moon,
   LogOut,
   UserCircle,
+  ChartNoAxesCombined
 } from "lucide-react"
 import { useTheme } from "@/lib/themes"
 import Link from "next/link"
@@ -44,6 +45,11 @@ const navigationItems = [
     title: "Organisation",
     href: "/organization",
     icon: CreditCard,
+  },
+  {
+    title: "Statistiques",
+    href: "/stats",
+    icon: ChartNoAxesCombined,
   },
   {
     title: "Mes projets",

@@ -1,29 +1,40 @@
 import { create } from "zustand";
+import { KanbanStatus, TaskPriority } from "@prisma/client";
 
-export interface KanbanTask {
+export type KanbanTask = {
   id: string;
   title: string;
-  description?: string;
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  plannedEndAt?: string;
-  actualEndAt?: string;
-  status: { id: string; name: string; color: string; order: number };
-  durationSeconds?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
+  description?: string | null;
+  priority: TaskPriority;
+  plannedStartAt?: Date | null;
+  plannedEndAt?: Date | null;
+  actualStartAt?: Date | null;
+  actualEndAt?: Date | null;
+  durationSeconds?: number | null;
+  boardId: string;
+  statusId: string;
+  groupId?: string | null;
+  assignedToId?: string | null;
+  status: KanbanStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
+  recurrenceType: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
+  lastRecurrence?: Date | null;
+};
 
-interface KanbanTasksState {
+type KanbanTasksStore = {
   tasks: KanbanTask[];
   setTasks: (tasks: KanbanTask[]) => void;
   updateTask: (task: KanbanTask) => void;
-}
+};
 
-export const useKanbanTasks = create<KanbanTasksState>((set) => ({
+export const useKanbanTasks = create<KanbanTasksStore>((set) => ({
   tasks: [],
   setTasks: (tasks) => set({ tasks }),
-  updateTask: (task) =>
+  updateTask: (updatedTask) =>
     set((state) => ({
-      tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, ...task } : t)),
+      tasks: state.tasks.map((task) =>
+        task.id === updatedTask.id ? updatedTask : task
+      ),
     })),
 })); 

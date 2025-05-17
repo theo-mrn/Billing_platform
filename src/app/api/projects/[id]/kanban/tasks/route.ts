@@ -2,110 +2,148 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { Session } from "next-auth";
 
-export async function POST(
+export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions) as Session | null;
+    const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const params = await context.params;
-    const projectId = params.id;
+    const { searchParams } = new URL(request.url);
+    const recurrent = searchParams.get('recurrent') === 'true';
 
-    // Verify user has access to this project
-    const userOrganization = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        organization: {
-          users: {
-            some: {
-              userId: session.user.id,
-            },
+    // Si on demande les tâches récurrentes, on filtre
+    if (recurrent) {
+      const tasks = await prisma.kanbanTask.findMany({
+        where: {
+          board: {
+            projectId: params.id,
+          },
+          recurrenceType: {
+            not: 'NONE',
           },
         },
-      },
-    });
-
-    if (!userOrganization) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+        include: {
+          status: true,
+          group: true,
+          assignedTo: true,
+        },
+      });
+      return NextResponse.json(tasks);
     }
 
-    const body = await request.json();
-    const {
-      title,
-      description,
-      priority,
-      plannedEndAt,
-      boardId,
-      statusId,
-      groupId,
-      assignedToId,
-    } = body;
-
-    if (!title || !boardId || !statusId) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Verify the board belongs to this project
-    const board = await prisma.kanbanBoard.findFirst({
+    // Sinon on renvoie toutes les tâches
+    const tasks = await prisma.kanbanTask.findMany({
       where: {
-        id: boardId,
-        projectId,
-      },
-    });
-
-    if (!board) {
-      return NextResponse.json(
-        { error: "Board not found" },
-        { status: 404 }
-      );
-    }
-
-    // Create the task
-    const task = await prisma.kanbanTask.create({
-      data: {
-        title,
-        description,
-        priority,
-        plannedEndAt: plannedEndAt ? new Date(plannedEndAt) : null,
-        boardId,
-        statusId,
-        groupId,
-        assignedToId,
+        board: {
+          projectId: params.id,
+        },
       },
       include: {
         status: true,
         group: true,
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
+        assignedTo: true,
+      },
+    });
+
+    return NextResponse.json(tasks);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const body = await request.json();
+
+    // Trouver le board par défaut du projet
+    const board = await prisma.kanbanBoard.findFirst({
+      where: {
+        projectId: params.id,
+      },
+    });
+
+    if (!board) {
+      return new NextResponse("Board not found", { status: 404 });
+    }
+
+    const task = await prisma.kanbanTask.create({
+      data: {
+        title: body.title,
+        description: body.description,
+        priority: body.priority,
+        plannedEndAt: body.plannedEndAt ? new Date(body.plannedEndAt) : null,
+        boardId: body.boardId || board.id,
+        statusId: body.statusId,
+        groupId: body.groupId,
+        assignedToId: body.assignedToId,
+        recurrenceType: body.recurrenceType || 'NONE',
+        lastRecurrence: body.lastRecurrence ? new Date(body.lastRecurrence) : null,
+      },
+      include: {
+        status: true,
+        group: true,
+        assignedTo: true,
       },
     });
 
     return NextResponse.json(task);
   } catch (error) {
-    console.error("[TASK_POST]", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("Error creating task:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
+}
+
+export async function PATCH(
+  request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const body = await request.json();
+    const taskId = request.url.split('/').pop();
+
+    const task = await prisma.kanbanTask.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        title: body.title,
+        description: body.description,
+        priority: body.priority,
+        plannedEndAt: body.plannedEndAt ? new Date(body.plannedEndAt) : undefined,
+        statusId: body.statusId,
+        groupId: body.groupId,
+        assignedToId: body.assignedToId,
+        durationSeconds: body.durationSeconds,
+        recurrenceType: body.recurrenceType,
+        lastRecurrence: body.lastRecurrence ? new Date(body.lastRecurrence) : undefined,
+      },
+      include: {
+        status: true,
+        group: true,
+        assignedTo: true,
+      },
+    });
+
+    return NextResponse.json(task);
+  } catch (error) {
+    console.error("Error updating task:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 } 

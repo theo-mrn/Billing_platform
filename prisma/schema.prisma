@@ -74,17 +74,17 @@ model Session {
 }
 
 model User {
-  id              String                   @id @default(cuid())
+  id              String            @id @default(cuid())
   name            String?
-  email           String?                  @unique
+  email           String?           @unique
   emailVerified   DateTime?
   image           String?
   password        String?
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  isSubscribed    Boolean                  @default(true)
-  level           Int                      @default(1)
-  xp              Int                      @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  isSubscribed    Boolean           @default(true)
+  level           Int               @default(1)
+  xp              Int               @default(0)
   accounts        Account[]
   sentInvitations OrganizationInvitation[] @relation("InvitedBy")
   sessions        Session[]
@@ -92,6 +92,7 @@ model User {
   assignedTasks   KanbanTask[]
   incomes         Income[]
   subscriptions   Subscription[]
+  pomodoroSessions PomodoroSession[]
 }
 
 model Income {
@@ -188,11 +189,18 @@ model KanbanGroup {
   @@index([boardId])
 }
 
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
 model KanbanTask {
-  id              String       @id @default(cuid())
+  id              String           @id @default(cuid())
   title           String
   description     String?
-  priority        TaskPriority @default(MEDIUM)
+  priority        TaskPriority     @default(MEDIUM)
   plannedStartAt  DateTime?
   plannedEndAt    DateTime?
   actualStartAt   DateTime?
@@ -202,12 +210,15 @@ model KanbanTask {
   statusId        String
   groupId         String?
   assignedToId    String?
-  board           KanbanBoard  @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  status          KanbanStatus @relation(fields: [statusId], references: [id])
-  group           KanbanGroup? @relation(fields: [groupId], references: [id])
-  assignedTo      User?        @relation(fields: [assignedToId], references: [id])
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  recurrenceType  RecurrenceType  @default(NONE)
+  lastRecurrence  DateTime?       // Pour suivre la dernière fois que la tâche a été récurrente
+  board           KanbanBoard      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  status          KanbanStatus     @relation(fields: [statusId], references: [id])
+  group           KanbanGroup?     @relation(fields: [groupId], references: [id])
+  assignedTo      User?            @relation(fields: [assignedToId], references: [id])
+  completions     TaskCompletion[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([boardId])
   @@index([statusId])
@@ -244,4 +255,29 @@ model Subscription {
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+}
+
+model PomodoroSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startTime   DateTime
+  endTime     DateTime
+  duration    Int      // Duration in seconds
+  type        String   // "WORK" or "BREAK"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model TaskCompletion {
+  id        String     @id @default(cuid())
+  taskId    String
+  task      KanbanTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  completedAt DateTime
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([taskId])
 }

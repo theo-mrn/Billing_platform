@@ -61,6 +61,9 @@ export async function PATCH(
           projectId,
         },
       },
+      include: {
+        status: true,
+      },
     });
 
     if (!task) {
@@ -68,6 +71,36 @@ export async function PATCH(
         { error: "Task not found" },
         { status: 404 }
       );
+    }
+
+    // Get the new status if it's being updated
+    let newStatus = null;
+    if (statusId && statusId !== task.statusId) {
+      newStatus = await prisma.kanbanStatus.findUnique({
+        where: { id: statusId },
+      });
+    }
+
+    // Determine if we need to update actualStartAt or actualEndAt
+    let actualStartAt = task.actualStartAt;
+    let actualEndAt = task.actualEndAt;
+
+    if (newStatus) {
+      if (newStatus.name === "Done" && !task.actualEndAt) {
+        actualEndAt = new Date();
+        
+        // Create a task completion record
+        await prisma.taskCompletion.create({
+          data: {
+            taskId: task.id,
+            completedAt: actualEndAt,
+          },
+        });
+      } else if (newStatus.name === "In Progress" && !task.actualStartAt) {
+        actualStartAt = new Date();
+      } else if (newStatus.name === "Planned") {
+        actualEndAt = null;
+      }
     }
 
     // Update the task
@@ -84,6 +117,8 @@ export async function PATCH(
         groupId,
         assignedToId,
         durationSeconds,
+        actualStartAt,
+        actualEndAt,
       },
       include: {
         status: true,

@@ -8,27 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
-import { useKanbanTasks, KanbanTask as StoreKanbanTask } from "@/store/kanbanTasks";
-
-interface KanbanStatus {
-  id: string;
-  name: string;
-  color: string;
-  order: number;
-}
-
-interface KanbanTask {
-  id: string;
-  title: string;
-  description?: string;
-  priority: "LOW" | "MEDIUM" | "HIGH";
-  plannedEndAt?: string;
-  actualEndAt?: string;
-  status: KanbanStatus;
-  durationSeconds?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { useKanbanTasks, KanbanTask } from "@/store/kanbanTasks";
+import { checkAndCreateRecurringTasks } from '@/lib/taskRecurrence';
+import { KanbanStatus, TaskPriority } from '@prisma/client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface ProjectTodoSidebarProps {
   projectId: string;
@@ -48,7 +37,7 @@ function TaskTimer({ timeLeft }: { timeLeft: number }) {
   );
 }
 
-function PriorityBadge({ priority }: { priority: "LOW" | "MEDIUM" | "HIGH" }) {
+function PriorityBadge({ priority }: { priority: TaskPriority }) {
   if (priority === "HIGH") {
     return (
       <span className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
@@ -79,7 +68,8 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
     title: "",
     description: "",
     durationSeconds: 0,
-    priority: "MEDIUM" as "LOW" | "MEDIUM" | "HIGH",
+    priority: "MEDIUM" as TaskPriority,
+    recurrenceType: "NONE" as "NONE" | "DAILY" | "WEEKLY" | "MONTHLY",
   });
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [timerValue, setTimerValue] = useState<number>(0); // temps restant pour la tâche active
@@ -109,11 +99,14 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
     const fetchTasks = async () => {
       const res = await fetch(`/api/projects/${projectId}/kanban`);
       const data = await res.json();
-      setTasks(data.tasks.map((t: StoreKanbanTask) => ({
+      setTasks(data.tasks.map((t: KanbanTask) => ({
         ...t,
         durationSeconds: typeof t.durationSeconds === 'number' ? t.durationSeconds : 0,
       })));
       setStatuses(data.statuses);
+      
+      // Vérifier les tâches récurrentes
+      await checkAndCreateRecurringTasks(projectId);
     };
     fetchTasks();
     const interval = setInterval(() => {
@@ -146,8 +139,27 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
   };
 
   const markAsDone = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
     setCongratsTaskId(taskId);
     setShowCongrats(true);
+
+    // Si c'est une tâche récurrente, on met à jour sa dernière récurrence
+    if (task.recurrenceType !== 'NONE') {
+      await fetch(`/api/projects/${projectId}/kanban/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lastRecurrence: new Date(),
+        }),
+      });
+      
+      // Vérifier si une nouvelle instance doit être créée
+      await checkAndCreateRecurringTasks(projectId);
+    }
   };
 
   // Fonction pour sauvegarder le temps restant à la pause ou à la fin
@@ -199,6 +211,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
       description: task.description || "",
       durationSeconds: task.durationSeconds || 0,
       priority: task.priority,
+      recurrenceType: task.recurrenceType,
     });
     setIsEditOpen(true);
   };
@@ -208,19 +221,23 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
     if (!editTask) return;
     const res = await fetch(`/api/projects/${projectId}/kanban/tasks/${editTask.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         title: editForm.title,
         description: editForm.description,
         durationSeconds: editForm.durationSeconds,
         priority: editForm.priority,
+        recurrenceType: editForm.recurrenceType,
       })
     });
     if (res.ok) {
-      setTasks(tasks.map(t => t.id === editTask.id ? { ...t, ...editForm } : t));
+      const updatedTask = await res.json();
+      setTasks(tasks.map(t => t.id === editTask.id ? { ...t, ...updatedTask } : t));
       setIsEditOpen(false);
       setEditTask(null);
-      updateTask({ ...editTask!, ...editForm });
+      updateTask({ ...editTask, ...updatedTask });
     }
   };
 
@@ -485,19 +502,42 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
             <div className="flex flex-col gap-2 mb-3">
               <Label className="mb-1">Priorité</Label>
               <div className="flex gap-3 mt-1">
-                {['LOW', 'MEDIUM', 'HIGH'].map(p => (
+                {(['LOW', 'MEDIUM', 'HIGH'] as const).map(p => (
                   <Button
                     key={p}
                     type="button"
                     variant={editForm.priority === p ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setEditForm(f => ({ ...f, priority: p as 'LOW' | 'MEDIUM' | 'HIGH' }))}
+                    onClick={() => setEditForm(f => ({ ...f, priority: p }))}
                     className="px-4 py-2"
                   >
                     {p}
                   </Button>
                 ))}
               </div>
+            </div>
+            <div className="flex flex-col gap-2 mb-3">
+              <Label className="mb-1">Récurrence</Label>
+              <Select
+                value={editForm.recurrenceType}
+                onValueChange={(value: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY") => 
+                  setEditForm(f => ({ ...f, recurrenceType: value }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {editForm.recurrenceType === 'NONE' ? 'Aucune' :
+                     editForm.recurrenceType === 'DAILY' ? 'Quotidienne' :
+                     editForm.recurrenceType === 'WEEKLY' ? 'Hebdomadaire' : 'Mensuelle'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Aucune</SelectItem>
+                  <SelectItem value="DAILY">Quotidienne</SelectItem>
+                  <SelectItem value="WEEKLY">Hebdomadaire</SelectItem>
+                  <SelectItem value="MONTHLY">Mensuelle</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setIsEditOpen(false)} className="px-5 py-2">Annuler</Button>
@@ -532,6 +572,14 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-muted-foreground">Statut</span>
                   <Badge className="text-xs px-2 py-1 rounded-full" style={{ background: infoTask.status?.color }}>{infoTask.status?.name}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">Récurrence</span>
+                  <Badge variant="outline" className="text-xs px-2 py-1">
+                    {infoTask.recurrenceType === 'NONE' ? 'Aucune' :
+                     infoTask.recurrenceType === 'DAILY' ? 'Quotidienne' :
+                     infoTask.recurrenceType === 'WEEKLY' ? 'Hebdomadaire' : 'Mensuelle'}
+                  </Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-muted-foreground">Durée</span>
