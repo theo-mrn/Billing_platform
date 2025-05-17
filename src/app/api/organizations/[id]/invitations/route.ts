@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { Resend } from "resend";
 import fs from 'fs';
 import path from 'path';
+import type { Session } from "next-auth";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -30,7 +31,7 @@ export async function POST(
   try {
     logToFile('1. Début de la création d\'invitation');
     const [session, { id: organizationId }] = await Promise.all([
-      getServerSession(authOptions),
+      getServerSession(authOptions) as Promise<Session | null>,
       params
     ]);
 
@@ -212,7 +213,7 @@ export async function GET(
 ) {
   try {
     const [session, { id: organizationId }] = await Promise.all([
-      getServerSession(authOptions),
+      getServerSession(authOptions) as Promise<Session | null>,
       params
     ]);
 

@@ -1,326 +1,198 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import {  subMonths } from "date-fns"
+import { subMonths } from "date-fns"
 import { startOfMonth, endOfMonth, format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { Session } from "next-auth"
+import { Income, User, Subscription } from "@prisma/client"
 
-export async function getDashboardStats() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.email) throw new Error("Non authentifié")
+interface CustomSession extends Session {
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+  };
+}
+
+interface MonthlyStats {
+  month: string;
+  totalAmount: number;
+  count: number;
+}
+
+interface IncomeStats {
+  totalAmount: number;
+  averageAmount: number;
+  monthlyStats: MonthlyStats[];
+}
+
+interface UserWithIncomes extends User {
+  incomes: Income[];
+}
+
+interface UserWithSubscriptions extends User {
+  subscriptions: Subscription[];
+}
+
+type ChartData = {
+  month: string;
+  amount: number;
+  subscriptions: Array<{
+    name: string;
+    amount: number;
+    category: string;
+  }>;
+}
+
+export async function getDashboardStats(): Promise<IncomeStats> {
+  try {
+    const session = (await getServerSession(authOptions)) as CustomSession | null;
+    if (!session?.user?.email) {
+      throw new Error("Non authentifié");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        incomes: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("Utilisateur non trouvé");
+    }
+
+    const userWithIncomes = user as UserWithIncomes;
+
+    // Calculer les statistiques pour les revenus
+    const monthlyStats: MonthlyStats[] = [];
+    const now = new Date();
+
+    // Calculer les statistiques pour les 12 derniers mois
+    for (let i = 0; i < 12; i++) {
+      const currentMonth = subMonths(now, i);
+      const start = startOfMonth(currentMonth);
+      const end = endOfMonth(currentMonth);
+
+      const monthlyIncomes = userWithIncomes.incomes.filter((income) => {
+        const incomeDate = new Date(income.transferDate);
+        return incomeDate >= start && incomeDate <= end;
+      });
+
+      const totalAmount = monthlyIncomes.reduce((sum, income) => sum + income.amount, 0);
+
+      monthlyStats.push({
+        month: format(currentMonth, "MMM yyyy", { locale: fr }),
+        totalAmount,
+        count: monthlyIncomes.length,
+      });
+    }
+
+    // Calculer les statistiques globales
+    const totalAmount = userWithIncomes.incomes.reduce((sum, income) => sum + income.amount, 0);
+    const averageAmount = userWithIncomes.incomes.length > 0 ? totalAmount / userWithIncomes.incomes.length : 0;
+
+    return {
+      totalAmount,
+      averageAmount,
+      monthlyStats: monthlyStats.reverse(), // Du plus ancien au plus récent
+    };
+  } catch (error) {
+    console.error("Erreur lors de la récupération des statistiques:", error);
+    throw new Error("Impossible de récupérer les statistiques");
+  }
+}
+
+export async function getIncomeStats() {
+  const session = (await getServerSession(authOptions)) as Session | null
+  if (!session?.user?.email) {
+    throw new Error("Non authentifié")
+  }
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    include: {
-      subscriptions: {
-        where: { status: "ACTIVE" },
-        orderBy: { renewalDate: "asc" },
-      },
-      incomes: true,
-    },
   })
 
   if (!user) {
     throw new Error("Utilisateur non trouvé")
   }
 
-  const activeSubscriptions = user.subscriptions
+  const now = new Date()
+  const sixMonthsAgo = subMonths(now, 6)
 
-  // Calculer les dépenses mensuelles totales pour l'année en cours
-  const currentYear = new Date().getFullYear()
-  const monthlyExpenses = Array.from({ length: 12 }, (_, i) => ({
-    month: new Date(currentYear, i, 1).toLocaleString("fr-FR", { month: "long" }),
-    amount: 0,
-    subscriptions: [] as Array<{
-      name: string
-      amount: number
-      category: string
-    }>,
+  const incomes = await prisma.income.findMany({
+    where: {
+      userId: user.id,
+      transferDate: {
+        gte: sixMonthsAgo,
+      },
+    },
+    orderBy: {
+      transferDate: "asc",
+    },
+  })
+
+  const monthlyIncomes = incomes.reduce((acc: { [key: string]: number }, income) => {
+    const monthKey = format(income.transferDate, "MMMM yyyy", { locale: fr })
+    acc[monthKey] = (acc[monthKey] || 0) + income.amount
+    return acc
+  }, {})
+
+  const monthlyData = Object.entries(monthlyIncomes).map(([month, amount]) => ({
+    month,
+    amount,
   }))
 
-  // Pour chaque abonnement, calculer les dates de renouvellement pour l'année
-  activeSubscriptions.forEach(sub => {
-    const renewalDate = new Date(sub.renewalDate)
-    const startYear = renewalDate.getFullYear()
-    const startMonth = renewalDate.getMonth()
-
-    // Calculer les mois de renouvellement selon la fréquence
-    let renewalMonths: number[] = []
-    
-    switch (sub.frequency) {
-      case "MONTHLY":
-        renewalMonths = Array.from({ length: 12 }, (_, i) => i)
-        break
-      
-      case "QUARTERLY":
-        for (let month = 0; month < 12; month += 3) {
-          const adjustedMonth = (startMonth + month) % 12
-          renewalMonths.push(adjustedMonth)
-        }
-        break
-      
-      case "SEMI_ANNUAL":
-        for (let month = 0; month < 12; month += 6) {
-          const adjustedMonth = (startMonth + month) % 12
-          renewalMonths.push(adjustedMonth)
-        }
-        break
-      
-      case "ANNUAL":
-        if (currentYear === startYear) {
-          renewalMonths = [startMonth]
-        }
-        break
-    }
-
-    // Ajouter le montant aux mois de renouvellement
-    renewalMonths.forEach(month => {
-      const renewalDateForMonth = new Date(currentYear, month, renewalDate.getDate())
-      if (renewalDateForMonth >= renewalDate) {
-        monthlyExpenses[month].amount += sub.amount
-        monthlyExpenses[month].subscriptions.push({
-          name: sub.name,
-          amount: sub.amount,
-          category: sub.category,
-        })
-      }
-    })
-  })
-
-  // Calculer la moyenne mensuelle des dépenses
-  const averageMonthlyExpense = monthlyExpenses.reduce((sum, month) => sum + month.amount, 0) / 12
-
-  // Calculer le total annuel des dépenses
-  const totalAnnualExpense = monthlyExpenses.reduce((sum, month) => sum + month.amount, 0)
-
-  // Obtenir le mois en cours
-  const currentMonth = new Date().getMonth()
-  const currentMonthExpense = monthlyExpenses[currentMonth].amount
-
-  // Calculer les revenus
-  const currentYearIncomes = user.incomes.filter(income => {
-    const transferDate = new Date(income.transferDate)
-    return transferDate.getFullYear() === currentYear
-  })
-
-  const totalAnnualIncome = currentYearIncomes.reduce((sum, income) => sum + income.amount, 0)
-  const averageMonthlyIncome = totalAnnualIncome / 12
-
-  // Calculer le revenu du mois en cours
-  const currentMonthIncome = currentYearIncomes
-    .filter(income => new Date(income.transferDate).getMonth() === currentMonth)
-    .reduce((sum, income) => sum + income.amount, 0)
-
-  // Générer les prochains renouvellements pour le calendrier
-  const now = new Date()
-  const upcomingRenewals = activeSubscriptions.flatMap(sub => {
-    const renewalDate = new Date(sub.renewalDate)
-    const nextRenewals: Array<{
-      id: string
-      name: string
-      category: string
-      renewalDate: Date
-      amount: number
-      frequency: string
-      status: string
-      logo?: string | null
-      description?: string | null
-    }> = []
-
-    // Calculer les 12 prochaines dates de renouvellement
-    let count = 0
-    while (count < 12) {
-      if (renewalDate > now) {
-        nextRenewals.push({
-          ...sub,
-          renewalDate: new Date(renewalDate),
-        })
-        count++
-      }
-
-      // Avancer à la prochaine date selon la fréquence
-      switch (sub.frequency) {
-        case "MONTHLY":
-          renewalDate.setMonth(renewalDate.getMonth() + 1)
-          break
-        case "QUARTERLY":
-          renewalDate.setMonth(renewalDate.getMonth() + 3)
-          break
-        case "SEMI_ANNUAL":
-          renewalDate.setMonth(renewalDate.getMonth() + 6)
-          break
-        case "ANNUAL":
-          renewalDate.setFullYear(renewalDate.getFullYear() + 1)
-          break
-      }
-    }
-
-    return nextRenewals
-  })
-
-  // Trier tous les renouvellements par date
-  const sortedRenewals = upcomingRenewals.sort((a, b) => a.renewalDate.getTime() - b.renewalDate.getTime())
-
-  return {
-    averageMonthlyExpense,
-    totalAnnualExpense,
-    currentMonthExpense,
-    averageMonthlyIncome,
-    totalAnnualIncome,
-    currentMonthIncome,
-    activeSubscriptions: activeSubscriptions.length,
-    upcomingRenewals: sortedRenewals,
-    monthlyIncomes: currentYearIncomes,
-  }
+  return monthlyData
 }
 
-export async function getExpenseChartData() {
-  try {
-    const session = await getServerSession(authOptions)
+export async function getExpenseChartData(year: number = new Date().getFullYear()): Promise<ChartData[]> {
+  const session = (await getServerSession(authOptions)) as Session | null;
+  if (!session?.user?.email) {
+    throw new Error("Non authentifié");
+  }
 
-    if (!session?.user?.email) {
-      throw new Error("Non authentifié")
-    }
-
-    // Récupérer l'organisation de l'utilisateur
-    const userWithOrg = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: {
-        organizations: {
-          take: 1,
-          include: {
-            organization: true,
-          },
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: {
+      subscriptions: {
+        where: {
+          status: "ACTIVE",
         },
       },
-    })
-
-    if (!userWithOrg?.organizations[0]?.organization?.id) {
-      throw new Error("Aucune organisation trouvée")
-    }
-
-    const organizationId = userWithOrg.organizations[0].organization.id
-
-    // Récupérer les 6 derniers mois
-    const months = Array.from({ length: 6 }, (_, i) => {
-      const date = new Date()
-      date.setMonth(date.getMonth() - i)
-      return {
-        start: startOfMonth(date),
-        end: endOfMonth(date),
-        label: format(date, "MMMM yyyy", { locale: fr }),
-      }
-    }).reverse()
-
-    // Récupérer les dépenses pour chaque mois
-    const expensesByMonth = await Promise.all(
-      months.map(async (month) => {
-        const expenses = await prisma.expense.findMany({
-          where: {
-            organizationId,
-            date: {
-              gte: month.start,
-              lte: month.end,
-            },
-          },
-          select: {
-            amount: true,
-          },
-        })
-
-        const total = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-
-        return {
-          month: month.label,
-          total,
-        }
-      })
-    )
-
-    return expensesByMonth
-  } catch (error) {
-    console.error("Error fetching expense chart data:", error)
-    return []
-  }
-}
-
-export async function getCategoryStats() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.email) throw new Error("Non authentifié")
-
-  const subscriptions = await prisma.subscription.findMany({
-    where: {
-      userId: session.user.email,
-      status: "ACTIVE",
     },
-  })
+  });
 
-  const categoryTotals = subscriptions.reduce((acc, sub) => {
-    acc[sub.category] = (acc[sub.category] || 0) + sub.amount
-    return acc
-  }, {} as Record<string, number>)
-
-  const total = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0)
-
-  return Object.entries(categoryTotals).map(([category, amount]) => ({
-    category,
-    amount,
-    percentage: (amount / total) * 100,
-  }))
-}
-
-export async function getTrendAnalysis() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.email) throw new Error("Non authentifié")
-
-  const currentDate = new Date()
-  const threeMonthsAgo = subMonths(currentDate, 3)
-
-  const subscriptions = await prisma.subscription.findMany({
-    where: {
-      userId: session.user.email,
-      status: "ACTIVE",
-      createdAt: {
-        gte: threeMonthsAgo,
-      },
-    },
-  })
-
-  // Calculer les variations de prix
-  const priceChanges = subscriptions.map((sub) => {
-    const monthlyAmount = sub.frequency === "MONTHLY"
-      ? sub.amount
-      : sub.frequency === "QUARTERLY"
-      ? sub.amount / 3
-      : sub.frequency === "SEMI_ANNUAL"
-      ? sub.amount / 6
-      : sub.amount / 12
-
-    // Simuler une variation de prix (à remplacer par des données réelles)
-    const variation = Math.random() * 20 - 10 // -10% à +10%
-
-    return {
-      name: sub.name,
-      variation: variation.toFixed(1),
-      currentAmount: monthlyAmount,
-    }
-  })
-
-  // Trier par variation
-  const increasingPrices = priceChanges
-    .filter((change) => parseFloat(change.variation) > 0)
-    .sort((a, b) => parseFloat(b.variation) - parseFloat(a.variation))
-    .slice(0, 3)
-
-  const decreasingPrices = priceChanges
-    .filter((change) => parseFloat(change.variation) < 0)
-    .sort((a, b) => parseFloat(a.variation) - parseFloat(b.variation))
-    .slice(0, 3)
-
-  return {
-    increasingPrices,
-    decreasingPrices,
+  if (!user) {
+    throw new Error("Utilisateur non trouvé");
   }
+
+  const userWithSubscriptions = user as UserWithSubscriptions;
+  const monthlyData: ChartData[] = [];
+
+  for (let month = 0; month < 12; month++) {
+    const date = new Date(year, month, 1);
+    const monthSubscriptions = userWithSubscriptions.subscriptions.filter(sub => {
+      const renewalDate = new Date(sub.renewalDate);
+      return renewalDate.getMonth() === month && renewalDate.getFullYear() === year;
+    });
+
+    const monthlyAmount = monthSubscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+
+    monthlyData.push({
+      month: format(date, "MMM yyyy", { locale: fr }),
+      amount: monthlyAmount,
+      subscriptions: monthSubscriptions.map(sub => ({
+        name: sub.name,
+        amount: sub.amount,
+        category: sub.category,
+      })),
+    });
+  }
+
+  return monthlyData;
 } 

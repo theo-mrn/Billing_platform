@@ -1,7 +1,8 @@
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import type { Session } from "next-auth";
 
 // Fonction pour calculer le niveau en fonction de l'XP
 function calculateLevel(xp: number) {
@@ -10,7 +11,7 @@ function calculateLevel(xp: number) {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as Session | null;
     console.log('Session:', session);
 
     if (!session?.user?.email) {
@@ -44,7 +45,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(authOptions) as Session | null;
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

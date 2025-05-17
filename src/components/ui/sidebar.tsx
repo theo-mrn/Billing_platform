@@ -34,17 +34,17 @@ import { OrganizationSelector } from "./OrganizationSelector";
 const navigationItems = [
   {
     title: "Home",
-    href: "/projects",
+    href: "/",
     icon: Home,
   },
   {
-    title: "Organsation",
+    title: "Organisation",
     href: "/organization",
     icon: CreditCard,
   },
   {
     title: "Mes projets",
-    href: "/projects/all",
+    href: "/projects",
     icon: BarChart3,
   },
 ];

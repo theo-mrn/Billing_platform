@@ -90,6 +90,22 @@ model User {
   sessions        Session[]
   organizations   UserOrganization[]
   assignedTasks   KanbanTask[]
+  incomes         Income[]
+  subscriptions   Subscription[]
+}
+
+model Income {
+  id           String   @id @default(cuid())
+  source       String
+  amount       Float
+  description  String?
+  transferDate DateTime
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -210,4 +226,22 @@ enum TaskPriority {
   LOW
   MEDIUM
   HIGH
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  amount      Float
+  frequency   String   // "MONTHLY" | "QUARTERLY" | "SEMI_ANNUAL" | "ANNUAL"
+  renewalDate DateTime
+  status      String   @default("ACTIVE") // "ACTIVE" | "CANCELLED" | "PAUSED"
+  logo        String?
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }

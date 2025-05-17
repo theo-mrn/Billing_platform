@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Building2, Users, Calendar, Mail, Plus, X, Clock, ChevronDown, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { updateMemberRole, updateOrganization } from "@/app/actions/organizations";
 import {
   Dialog,
   DialogContent,
@@ -40,8 +41,8 @@ interface Organization {
   id: string;
   name: string;
   description: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   users: {
     user: {
       id: string;
@@ -50,6 +51,13 @@ interface Organization {
       image: string | null;
     };
     role: OrganizationRole;
+  }[];
+  invitations: {
+    id: string;
+    email: string | null;
+    status: string;
+    role: string;
+    inviteUrl?: string;
   }[];
 }
 
@@ -69,8 +77,17 @@ interface Invitation {
   inviteUrl?: string;
 }
 
+interface CustomSession {
+  user: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
 export default function OrganizationPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession() as { data: CustomSession | null, status: string };
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrgIndex, setSelectedOrgIndex] = useState(0);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -125,28 +142,15 @@ export default function OrganizationPage() {
   const handleSave = async () => {
     if (organizations[selectedOrgIndex]) {
       try {
-        const response = await fetch(`/api/organizations/${organizations[selectedOrgIndex].id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(editForm),
-        });
-
-        if (response.ok) {
-          const updatedOrg = await response.json();
-          const updatedOrgs = [...organizations];
-          updatedOrgs[selectedOrgIndex] = updatedOrg;
-          setOrganizations(updatedOrgs);
-          setIsEditing(false);
-          toast.success("Organisation mise à jour avec succès");
-        } else {
-          const error = await response.json();
-          toast.error(error.error || "Erreur lors de la mise à jour");
-        }
+        const updatedOrg = await updateOrganization(organizations[selectedOrgIndex].id, editForm);
+        const updatedOrgs = [...organizations];
+        updatedOrgs[selectedOrgIndex] = updatedOrg;
+        setOrganizations(updatedOrgs);
+        setIsEditing(false);
+        toast.success("Organisation mise à jour avec succès");
       } catch (error) {
         console.error("Error updating organization:", error);
-        toast.error("Erreur lors de la mise à jour");
+        toast.error((error as Error).message || "Erreur lors de la mise à jour");
       }
     }
   };
@@ -416,28 +420,16 @@ export default function OrganizationPage() {
                               defaultValue={userOrg.role}
                               onValueChange={async (newRole: OrganizationRole) => {
                                 try {
-                                  const response = await fetch(`/api/organizations/${selectedOrg.id}/members/${userOrg.user.id}/role`, {
-                                    method: "PATCH",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({ role: newRole }),
-                                  });
-
-                                  if (response.ok) {
-                                    const updatedOrgs = [...organizations];
-                                    const orgIndex = organizations.findIndex(org => org.id === selectedOrg.id);
-                                    const userIndex = updatedOrgs[orgIndex].users.findIndex(u => u.user.id === userOrg.user.id);
-                                    updatedOrgs[orgIndex].users[userIndex].role = newRole;
-                                    setOrganizations(updatedOrgs);
-                                    toast.success("Rôle mis à jour avec succès");
-                                  } else {
-                                    const error = await response.json();
-                                    toast.error(error.error || "Erreur lors de la mise à jour du rôle");
-                                  }
+                                  await updateMemberRole(selectedOrg.id, userOrg.user.id, newRole);
+                                  const updatedOrgs = [...organizations];
+                                  const orgIndex = organizations.findIndex(org => org.id === selectedOrg.id);
+                                  const userIndex = updatedOrgs[orgIndex].users.findIndex(u => u.user.id === userOrg.user.id);
+                                  updatedOrgs[orgIndex].users[userIndex].role = newRole;
+                                  setOrganizations(updatedOrgs);
+                                  toast.success("Rôle mis à jour avec succès");
                                 } catch (error) {
                                   console.error("Error updating role:", error);
-                                  toast.error("Erreur lors de la mise à jour du rôle");
+                                  toast.error((error as Error).message || "Erreur lors de la mise à jour du rôle");
                                 }
                               }}
                             >

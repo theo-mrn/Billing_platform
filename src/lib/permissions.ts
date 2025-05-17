@@ -60,8 +60,8 @@ export function hasPermission(role: OrganizationRole, permission: keyof RolePerm
 export function getAssignableRoles(userRole: OrganizationRole): OrganizationRole[] {
   const userHierarchy = ROLE_HIERARCHY[userRole];
   return Object.entries(ROLE_HIERARCHY)
-    .filter(([_, hierarchy]) => hierarchy < userHierarchy)
-    .map(([role]) => role as OrganizationRole);
+    .filter((entry) => entry[1] < userHierarchy)
+    .map((entry) => entry[0] as OrganizationRole);
 }
 
 // Descriptions des rôles pour l'interface utilisateur
