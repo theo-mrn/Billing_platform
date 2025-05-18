@@ -53,7 +53,7 @@ interface Organization {
 
 export default function ProjectsPage() {
   const { data: session, status } = useSession();
-  const { selectedOrg, setSelectedOrg } = useOrganization();
+  const { selectedOrg, setSelectedOrg, isLoading: isOrgLoading } = useOrganization();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -209,7 +209,7 @@ export default function ProjectsPage() {
     setEditingProject(null);
   };
 
-  if (status === "loading" || isLoading) {
+  if (status === "loading" || isLoading || isOrgLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-12 w-64" />
