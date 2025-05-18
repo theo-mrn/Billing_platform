@@ -12,8 +12,14 @@ export async function GET(
   
   try {
     const session = await getServerSession(authOptions) as Session | null;
+    console.log('GET /api/organizations/[id]/projects - Session:', {
+      userId: session?.user?.id,
+      userEmail: session?.user?.email,
+      organizationId: id
+    });
 
     if (!session?.user?.email) {
+      console.error('No authenticated user');
       return NextResponse.json(
         { error: "Non authentifié" },
         { status: 401 }
@@ -21,6 +27,11 @@ export async function GET(
     }
 
     // Vérifier que l'utilisateur a accès à l'organisation
+    console.log('Checking user organization access for:', {
+      organizationId: id,
+      userEmail: session.user.email
+    });
+    
     const userOrg = await prisma.userOrganization.findFirst({
       where: {
         organizationId: id,
@@ -28,9 +39,33 @@ export async function GET(
           email: session.user.email,
         },
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true
+          }
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    console.log('User organization found:', {
+      found: !!userOrg,
+      role: userOrg?.role,
+      orgName: userOrg?.organization?.name
     });
 
     if (!userOrg) {
+      console.error('User not authorized:', {
+        organizationId: id,
+        userEmail: session.user.email
+      });
       return NextResponse.json(
         { error: "Non autorisé" },
         { status: 403 }
@@ -38,6 +73,7 @@ export async function GET(
     }
 
     // Récupérer tous les projets de l'organisation
+    console.log('Fetching projects for organization:', id);
     const projects = await prisma.project.findMany({
       where: {
         organizationId: id,
@@ -45,6 +81,11 @@ export async function GET(
       orderBy: {
         createdAt: 'desc',
       },
+    });
+    console.log('Projects found:', {
+      count: projects.length,
+      projectNames: projects.map(p => p.name),
+      hasDefaultProject: projects.some(p => p.isDefault)
     });
 
     return NextResponse.json(projects);

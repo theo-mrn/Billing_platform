@@ -57,6 +57,7 @@ export default function ProjectsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<{ name: string; description: string }>({
@@ -68,53 +69,71 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     const fetchOrganizations = async () => {
-      console.log("Attempting to fetch organizations. Session user email:", session?.user?.email);
+      console.log("Fetching organizations. Session state:", {
+        status,
+        userEmail: session?.user?.email,
+        userId: session?.user?.id
+      });
+      
       try {
         const response = await fetch("/api/organizations/user");
+        console.log("Organizations API response status:", response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log("Organizations fetched:", data.length);
           setOrganizations(data.map((org: { id: string; name: string }) => ({ id: org.id, name: org.name })));
+        } else {
+          const errorData = await response.json();
+          console.error("Error response from organizations API:", errorData);
+          setError(errorData.error || "Erreur lors de la récupération des organisations");
         }
       } catch (error) {
         console.error("Error fetching organizations:", error);
-        toast.error("Erreur lors de la récupération des organisations");
+        setError("Erreur lors de la récupération des organisations");
       }
     };
 
     if (session?.user?.email) {
       fetchOrganizations();
     }
-  }, [session]);
+  }, [session, status]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       if (!selectedOrg) {
-        console.log("Skipping fetchProjects: no selectedOrg.");
+        console.log("No organization selected, skipping projects fetch");
+        setProjects([]);
+        setIsLoading(false);
         return;
       }
-      console.log(`Attempting to fetch projects for org: ${selectedOrg}`);
+
+      console.log("Fetching projects for organization:", selectedOrg);
       setIsLoading(true);
+      setError(null);
+
       try {
         const response = await fetch(`/api/organizations/${selectedOrg}/projects`);
+        console.log("Projects API response status:", response.status);
+
         if (response.ok) {
           const data = await response.json();
+          console.log("Projects fetched:", data.length);
           setProjects(data);
+        } else {
+          const errorData = await response.json();
+          console.error("Error response from projects API:", errorData);
+          setError(errorData.error || "Erreur lors de la récupération des projets");
         }
       } catch (error) {
         console.error("Error fetching projects:", error);
-        toast.error("Erreur lors de la récupération des projets");
+        setError("Erreur lors de la récupération des projets");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (selectedOrg) {
-      fetchProjects();
-    } else {
-      console.log("No selectedOrg, clearing projects and not fetching.");
-      setProjects([]); // Clear projects if no org is selected
-      setIsLoading(false); // Ensure loading is false if not fetching
-    }
+    fetchProjects();
   }, [selectedOrg]);
 
   const handleCreateOrUpdate = async () => {
@@ -194,11 +213,12 @@ export default function ProjectsPage() {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-12 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((n) => (
-            <Skeleton key={n} className="h-48" />
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-6 space-y-6">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -208,11 +228,23 @@ export default function ProjectsPage() {
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="p-6">
+            <p className="text-center text-muted-foreground">
+              Veuillez vous connecter pour voir les projets.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-6">
             <div className="flex flex-col items-center space-y-4">
-              <AlertCircle className="h-12 w-12 text-muted-foreground" />
-              <p className="text-center text-muted-foreground">
-                Veuillez vous connecter pour voir vos projets.
-              </p>
+              <AlertCircle className="h-12 w-12 text-destructive" />
+              <p className="text-center text-destructive">{error}</p>
             </div>
           </CardContent>
         </Card>
@@ -234,7 +266,7 @@ export default function ProjectsPage() {
             value={selectedOrg || ""}
             onValueChange={(value) => {
               if (value) {
-                // Assuming the selectedOrg is set in the useOrganization context
+                window.location.href = `/organization/${value}/projects`;
               }
             }}
           >

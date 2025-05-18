@@ -86,7 +86,7 @@ export const authOptions: NextAuthOptions = {
     },
     async signIn({ user, account, profile }) {
       try {
-        console.log('SignIn callback:', { user, account, profile });
+        console.log('SignIn callback started:', { user, account, profile });
         
         if (!user.email) {
           console.error('No email provided');
@@ -94,32 +94,42 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Vérifier si l'utilisateur existe et récupérer ses organisations
+        console.log('Checking if user exists:', user.email);
         let userWithOrg = await prisma.user.findUnique({
           where: { email: user.email },
           include: {
             organizations: true,
           },
         });
+        console.log('User found:', userWithOrg ? 'yes' : 'no');
 
         // Si l'utilisateur n'existe pas, le créer
         if (!userWithOrg) {
-          userWithOrg = await prisma.user.create({
-            data: {
-              email: user.email,
-              name: user.name || user.email.split('@')[0],
-              image: user.image,
-            },
-            include: {
-              organizations: true,
-            },
-          });
-          console.log('Created new user:', userWithOrg.email);
+          console.log('Creating new user:', user.email);
+          try {
+            userWithOrg = await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name || user.email.split('@')[0],
+                image: user.image,
+              },
+              include: {
+                organizations: true,
+              },
+            });
+            console.log('Created new user successfully:', userWithOrg.email);
+          } catch (createError) {
+            console.error('Error creating user:', createError);
+            throw createError;
+          }
         }
 
         // Si l'utilisateur n'a pas d'organisation, en créer une par défaut
+        console.log('Checking organizations:', userWithOrg.organizations.length);
         if (userWithOrg.organizations.length === 0) {
+          console.log('Creating default organization for user:', userWithOrg.email);
           try {
-            await prisma.organization.create({
+            const organization = await prisma.organization.create({
               data: {
                 name: `${userWithOrg.name || userWithOrg.email?.split('@')[0]}'s Organization`,
                 description: `Default organization for ${userWithOrg.name || userWithOrg.email}`,
@@ -137,11 +147,19 @@ export const authOptions: NextAuthOptions = {
                   }
                 }
               },
+              include: {
+                projects: true,
+                users: true
+              }
             });
-            console.log('Created default organization for user:', userWithOrg.email);
+            console.log('Created default organization successfully:', {
+              organizationId: organization.id,
+              projects: organization.projects.length,
+              users: organization.users.length
+            });
           } catch (orgError) {
             console.error('Error creating organization:', orgError);
-            // Continue même si la création de l'organisation échoue
+            throw orgError; // On arrête le processus si la création de l'organisation échoue
           }
         }
         
@@ -157,9 +175,10 @@ export const authOptions: NextAuthOptions = {
           // Continue même si l'ajout à Resend échoue
         }
         
+        console.log('SignIn process completed successfully');
         return true;
       } catch (error) {
-        console.error('Error in signIn callback:', error);
+        console.error('Fatal error in signIn callback:', error);
         return false;
       }
     },
