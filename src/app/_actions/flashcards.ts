@@ -9,7 +9,7 @@ export async function getProjectFlashcards(projectId: string, deckId?: string) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -42,13 +42,13 @@ export async function getProjectFlashcards(projectId: string, deckId?: string) {
     });
 
     if (!userProject) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     if (deckId) {
       const deck = userProject.decks.find(d => d.id === deckId);
       if (!deck) {
-        throw new Error('Deck not found');
+        throw new Error('Paquet non trouvé');
       }
       return { flashcards: deck.flashcards };
     }
@@ -58,7 +58,7 @@ export async function getProjectFlashcards(projectId: string, deckId?: string) {
     return { flashcards: allFlashcards };
   } catch (error) {
     console.error('[GET_FLASHCARDS]', error);
-    throw new Error('Failed to get flashcards');
+    throw new Error('Impossible de récupérer les cartes');
   }
 }
 
@@ -66,7 +66,7 @@ export async function createFlashcard(projectId: string, deckId: string, data: {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -84,7 +84,7 @@ export async function createFlashcard(projectId: string, deckId: string, data: {
     });
 
     if (!userOrg) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     const flashcard = await prisma.flashcard.create({
@@ -108,9 +108,9 @@ export async function createFlashcard(projectId: string, deckId: string, data: {
   } catch (error) {
     console.error('[CREATE_FLASHCARD]', error);
     if (error instanceof Error) {
-      throw new Error(`Failed to create flashcard: ${error.message}`);
+      throw new Error(`Impossible de créer la carte : ${error.message}`);
     }
-    throw new Error('Failed to create flashcard: Unknown error');
+    throw new Error('Impossible de créer la carte : Erreur inconnue');
   }
 }
 
@@ -118,7 +118,7 @@ export async function deleteFlashcard(projectId: string, flashcardId: string) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -136,7 +136,7 @@ export async function deleteFlashcard(projectId: string, flashcardId: string) {
     });
 
     if (!userOrg) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     await prisma.flashcard.delete({
@@ -150,7 +150,7 @@ export async function deleteFlashcard(projectId: string, flashcardId: string) {
     return { success: true };
   } catch (error) {
     console.error('[DELETE_FLASHCARD]', error);
-    throw new Error('Failed to delete flashcard');
+    throw new Error('Impossible de supprimer la carte');
   }
 }
 
@@ -158,7 +158,7 @@ export async function updateFlashcard(projectId: string, flashcardId: string, da
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -176,7 +176,7 @@ export async function updateFlashcard(projectId: string, flashcardId: string, da
     });
 
     if (!userOrg) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     const flashcard = await prisma.flashcard.update({
@@ -201,7 +201,7 @@ export async function updateFlashcard(projectId: string, flashcardId: string, da
     return { flashcard };
   } catch (error) {
     console.error('[UPDATE_FLASHCARD]', error);
-    throw new Error('Failed to update flashcard');
+    throw new Error('Impossible de mettre à jour la carte');
   }
 }
 

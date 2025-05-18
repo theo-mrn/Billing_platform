@@ -47,17 +47,20 @@ export async function POST(
     const params = await context.params;
     const projectId = params.id;
     const body = await request.json();
-    const { id, title, content } = body;
+    const { id, title, content, folderId } = body;
+
+    const data = {
+      title,
+      content,
+      folderId: folderId || null,
+      updatedAt: new Date(),
+    };
 
     // Si un ID est fourni, on met à jour le contenu existant
     if (id) {
       const updatedContent = await prisma.richTextContent.update({
         where: { id },
-        data: {
-          title,
-          content,
-          updatedAt: new Date(),
-        },
+        data,
       });
       return NextResponse.json(updatedContent);
     }
@@ -65,8 +68,7 @@ export async function POST(
     // Sinon, on crée un nouveau contenu
     const newContent = await prisma.richTextContent.create({
       data: {
-        title,
-        content,
+        ...data,
         projectId,
       },
     });

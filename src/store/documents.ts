@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getFolders, createFolder } from '@/app/api/projects/[id]/folders/actions';
+import { getDocuments, moveDocument } from '@/app/actions/documents';
 import type { TextDocument, TextFolder } from '@/types/documents';
 
 interface DocumentsStore {
@@ -11,7 +12,7 @@ interface DocumentsStore {
   setSelectedFolder: (folderId: string | null) => void;
   updateDocument: (documentId: string, updates: Partial<TextDocument>) => void;
   moveDocument: (documentId: string, targetFolderId: string | null) => void;
-  addDocument: (document: TextDocument) => void;
+  addDocument: (document: Partial<TextDocument> & { createdAt?: string | Date; updatedAt?: string | Date }) => void;
   addFolder: (folder: TextFolder) => void;
   updateFolder: (folderId: string, updates: Partial<TextFolder>) => void;
   deleteFolder: (folderId: string) => void;
@@ -20,34 +21,71 @@ interface DocumentsStore {
   createNewFolder: (projectId: string, name: string, parentId?: string) => Promise<void>;
 }
 
+const ensureDate = (date: string | Date | undefined): Date => {
+  if (!date) return new Date();
+  if (date instanceof Date) return date;
+  // Handle both ISO string and Prisma date string formats
+  return new Date(date);
+};
+
 export const useDocumentsStore = create<DocumentsStore>((set, get) => ({
   documents: [],
   folders: [],
   selectedFolderId: null,
 
-  setDocuments: (documents) => set({ documents }),
+  setDocuments: (documents) => set({ 
+    documents: documents.map(doc => ({
+      ...doc,
+      createdAt: ensureDate(doc.createdAt),
+      updatedAt: ensureDate(doc.updatedAt),
+    }))
+  }),
+  
   setFolders: (folders) => set({ folders }),
   setSelectedFolder: (folderId) => set({ selectedFolderId: folderId }),
 
   updateDocument: (documentId, updates) => {
     const { documents } = get();
     const updatedDocuments = documents.map(doc =>
-      doc.id === documentId ? { ...doc, ...updates } : doc
+      doc.id === documentId ? {
+        ...doc,
+        ...updates,
+        createdAt: ensureDate(updates.createdAt ?? doc.createdAt),
+        updatedAt: ensureDate(updates.updatedAt ?? doc.updatedAt),
+      } : doc
     );
     set({ documents: updatedDocuments });
   },
 
-  moveDocument: (documentId, targetFolderId) => {
-    const { documents } = get();
-    const updatedDocuments = documents.map(doc =>
-      doc.id === documentId ? { ...doc, folderId: targetFolderId } : doc
-    );
-    set({ documents: updatedDocuments });
+  moveDocument: async (documentId, targetFolderId) => {
+    try {
+      const { documents } = get();
+      const projectId = documents.find(doc => doc.id === documentId)?.projectId;
+      
+      if (!projectId) {
+        throw new Error("Document not found");
+      }
+
+      const updatedDoc = await moveDocument(projectId, documentId, targetFolderId);
+      
+      const updatedDocuments = documents.map(doc =>
+        doc.id === documentId ? updatedDoc : doc
+      );
+      set({ documents: updatedDocuments });
+    } catch (error) {
+      console.error('Error moving document:', error);
+      throw error;
+    }
   },
 
   addDocument: (document) => {
     const { documents } = get();
-    set({ documents: [...documents, document] });
+    const newDoc: TextDocument = {
+      ...document as Omit<TextDocument, 'createdAt' | 'updatedAt'>,
+      createdAt: ensureDate(document.createdAt),
+      updatedAt: ensureDate(document.updatedAt),
+    };
+    set({ documents: [...documents, newDoc] });
   },
 
   addFolder: (folder) => {
@@ -71,10 +109,8 @@ export const useDocumentsStore = create<DocumentsStore>((set, get) => ({
 
   fetchDocuments: async (projectId) => {
     try {
-      const response = await fetch(`/api/projects/${projectId}/text`);
-      if (!response.ok) throw new Error('Failed to fetch documents');
-      const data = await response.json();
-      set({ documents: data });
+      const documents = await getDocuments(projectId);
+      set({ documents });
     } catch (error) {
       console.error('Error fetching documents:', error);
     }

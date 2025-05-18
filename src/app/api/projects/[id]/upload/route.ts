@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+
+async function createDirIfNotExists(dir: string) {
+  try {
+    await mkdir(dir, { recursive: true });
+  } catch (error) {
+    if ((error as { code?: string }).code !== 'EEXIST') {
+      throw error;
+    }
+  }
+}
 
 export async function POST(
   request: Request,
@@ -51,24 +61,5 @@ export async function POST(
   } catch (error) {
     console.error("Error uploading file:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
-  }
-}
-
-async function createDirIfNotExists(dir: string) {
-  try {
-    await writeFile(dir, '', { flag: 'wx' });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EISDIR') {
-      // Le dossier existe déjà, c'est ok
-      return;
-    }
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      // Le dossier parent n'existe pas, on le crée récursivement
-      const parentDir = join(dir, '..');
-      await createDirIfNotExists(parentDir);
-      await writeFile(dir, '', { flag: 'wx' });
-      return;
-    }
-    throw error;
   }
 } 

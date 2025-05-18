@@ -4,30 +4,37 @@ import { Inter } from "next/font/google"
 import { Toaster } from "@/components/ui/sonner"
 import { Providers } from "@/components/providers/Providers"
 import { ThemeProvider } from "next-themes"
+import { MusicProvider } from "@/contexts/MusicContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Yner",
-  description: "Un outil pour gerer vos abonnements",
+  title: "Billing Platform",
+  description: "A modern billing platform",
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="fr" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <link rel="icon" href="/favicon/image.png" />
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet"
+        />
       </head>
       <body className={`${inter.className} w-full h-full`} suppressHydrationWarning>
         <Providers>
           <ThemeProvider attribute="data-color-mode">
-            <div className="min-h-screen w-full">
-              {children}
-            </div>
+            <MusicProvider>
+              <div className="min-h-screen w-full">
+                {children}
+              </div>
+            </MusicProvider>
           </ThemeProvider>
         </Providers>
         <Toaster />

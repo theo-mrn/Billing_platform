@@ -99,6 +99,19 @@ export const KanbanCards = ({ children, className }: KanbanCardsProps) => (
   <div className={cn('flex flex-1 flex-col gap-2', className)}>{children}</div>
 );
 
+const getStatusTranslation = (name: string) => {
+  switch (name) {
+    case 'Planned':
+      return 'À faire';
+    case 'In Progress':
+      return 'En cours';
+    case 'Done':
+      return 'Terminé';
+    default:
+      return name;
+  }
+};
+
 export type KanbanHeaderProps =
   | {
       children: ReactNode;
@@ -118,7 +131,7 @@ export const KanbanHeader = (props: KanbanHeaderProps) =>
         className="h-2 w-2 rounded-full"
         style={{ backgroundColor: props.color }}
       />
-      <p className="m-0 font-semibold text-sm">{props.name}</p>
+      <p className="m-0 font-semibold text-sm">{getStatusTranslation(props.name)}</p>
     </div>
   );
 

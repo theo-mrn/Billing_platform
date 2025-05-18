@@ -16,24 +16,26 @@ export default function ProjectLayout({
   const projectId = params.id as string
 
   return (
-    <div className="flex gap-4 p-4 relative">
-      <div className="flex-1">{children}</div>
+    <div className="flex gap-0 relative">
+      <div className="flex-1 p-4">{children}</div>
       
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute right-0 top-4 z-50"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? (
-          <PanelRightClose className="h-5 w-5" />
-        ) : (
-          <PanelRightOpen className="h-5 w-5" />
-        )}
-      </Button>
+      <div className="flex items-start gap-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative -left-3 top-4 z-50"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
+          {isSidebarOpen ? (
+            <PanelRightClose className="h-5 w-5" />
+          ) : (
+            <PanelRightOpen className="h-5 w-5" />
+          )}
+        </Button>
 
-      <div className={`transition-all duration-300 ${isSidebarOpen ? 'w-96 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
-        <ProjectTodoSidebar projectId={projectId} />
+        <div className={`transition-all duration-300 ${isSidebarOpen ? ' border-none mr-6 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+          <ProjectTodoSidebar projectId={projectId} />
+        </div>
       </div>
     </div>
   )

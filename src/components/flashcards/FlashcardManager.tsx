@@ -84,29 +84,29 @@ const FlashcardForm: React.FC<FlashcardFormProps> = ({
           id="question"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Enter your question"
+          placeholder="Entrez votre question"
           required
           className="min-h-[100px]"
         />
       </div>
       <div className="space-y-2">
         <label htmlFor="answer" className="text-sm font-medium">
-          Answer
+          Réponse
         </label>
         <Textarea
           id="answer"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Enter the answer"
+          placeholder="Entrez la réponse"
           required
           className="min-h-[100px]"
         />
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          Annuler
         </Button>
-        <Button type="submit">Save</Button>
+        <Button type="submit">Enregistrer</Button>
       </div>
     </form>
   );
@@ -129,7 +129,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">Flashcard</CardTitle>
+          <CardTitle className="text-lg">Carte</CardTitle>
           <div className="flex gap-1">
             <Button
               variant="ghost"
@@ -151,15 +151,15 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Flashcard</AlertDialogTitle>
+                  <AlertDialogTitle>Supprimer la carte</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this flashcard? This action cannot be undone.
+                    Êtes-vous sûr de vouloir supprimer cette carte ? Cette action est irréversible.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
                   <AlertDialogAction onClick={() => onDelete(flashcard.id)}>
-                    Delete
+                    Supprimer
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -169,12 +169,12 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
       </CardHeader>
       <CardContent className="flex-grow flex flex-col">
         <div className="mb-4 flex-grow">
-          <p className="font-medium">Question:</p>
+          <p className="font-medium">Question :</p>
           <p className="mt-1 text-muted-foreground">{flashcard.question}</p>
         </div>
         {showAnswer ? (
           <div className="mt-auto">
-            <p className="font-medium">Answer:</p>
+            <p className="font-medium">Réponse :</p>
             <p className="mt-1 text-muted-foreground">{flashcard.answer}</p>
           </div>
         ) : (
@@ -184,7 +184,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
               onClick={() => setShowAnswer(true)}
               className="w-full"
             >
-              Show Answer
+              Voir la réponse
             </Button>
           </div>
         )}
@@ -196,7 +196,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
             size="sm"
             onClick={() => setShowAnswer(false)}
           >
-            Hide Answer
+            Masquer la réponse
           </Button>
         </CardFooter>
       )}
@@ -288,14 +288,14 @@ const StudyCard: React.FC<StudyCardProps> = ({
   return (
     <Card className="max-w-xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-xl">Study Mode</CardTitle>
+        <CardTitle className="text-xl">Mode révision</CardTitle>
         <CardDescription>
-          Review your flashcards and rate how well you remembered
+          Révisez vos cartes et évaluez votre niveau de mémorisation
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="bg-muted p-4 rounded-lg">
-          <h3 className="font-medium mb-2">Question:</h3>
+          <h3 className="font-medium mb-2">Question :</h3>
           <p>{flashcard.question}</p>
         </div>
 
@@ -304,38 +304,38 @@ const StudyCard: React.FC<StudyCardProps> = ({
             className="w-full"
             onClick={() => setShowAnswer(true)}
           >
-            Show Answer
+            Voir la réponse
           </Button>
         ) : (
           <div className="space-y-6">
             <div className="bg-muted/50 p-4 rounded-lg border border-border">
-              <h3 className="font-medium mb-2">Answer:</h3>
+              <h3 className="font-medium mb-2">Réponse :</h3>
               <p>{flashcard.answer}</p>
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium text-center">How well did you know this?</p>
+              <p className="text-sm font-medium text-center">Comment avez-vous répondu ?</p>
               <div className="flex gap-2 justify-center">
                 <Button
                   variant="outline"
                   className="flex-1 border-red-200 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
                   onClick={() => handleResponse(0)}
                 >
-                  Failed
+                  Raté
                 </Button>
                 <Button
                   variant="outline"
                   className="flex-1 border-yellow-200 hover:bg-yellow-50 hover:text-yellow-600 dark:hover:bg-yellow-950/30"
                   onClick={() => handleResponse(3)}
                 >
-                  Hard
+                  Difficile
                 </Button>
                 <Button
                   variant="outline"
                   className="flex-1 border-green-200 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950/30"
                   onClick={() => handleResponse(5)}
                 >
-                  Good
+                  Facile
                 </Button>
               </div>
             </div>
@@ -345,7 +345,7 @@ const StudyCard: React.FC<StudyCardProps> = ({
       <CardFooter className="flex justify-between">
         {showAnswer && (
           <Button variant="ghost" onClick={() => setShowAnswer(false)}>
-            Hide Answer
+            Masquer la réponse
           </Button>
         )}
         <Button
@@ -356,7 +356,7 @@ const StudyCard: React.FC<StudyCardProps> = ({
             onNext(0);
           }}
         >
-          Skip <ArrowRight className="ml-2 h-4 w-4" />
+          Passer <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>
@@ -380,13 +380,13 @@ const DeckForm: React.FC<{
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <label htmlFor="name" className="text-sm font-medium">
-          Name
+          Nom
         </label>
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Enter deck name"
+          placeholder="Nom du paquet"
           required
         />
       </div>
@@ -398,14 +398,14 @@ const DeckForm: React.FC<{
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Enter deck description"
+          placeholder="Description du paquet"
         />
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          Annuler
         </Button>
-        <Button type="submit">Save</Button>
+        <Button type="submit">Enregistrer</Button>
       </div>
     </form>
   );
@@ -421,11 +421,116 @@ interface PrismaDeck {
   flashcards: Flashcard[];
 }
 
+const QuickAddFlashcard: React.FC<{
+  onSubmit: (data: Flashcard) => void;
+}> = ({ onSubmit }) => {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent, shouldAddAnother: boolean = false) => {
+    e.preventDefault();
+    if (!question.trim() || !answer.trim()) return;
+    
+    onSubmit({
+      id: crypto.randomUUID(),
+      question,
+      answer,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      projectId: "",
+      deckId: "",
+    });
+    
+    // Reset form
+    setQuestion("");
+    setAnswer("");
+    
+    // Only collapse if we're not adding another
+    if (!shouldAddAnother) {
+      setIsExpanded(false);
+    } else {
+      // Focus the question input for the next card
+      const questionInput = document.getElementById("question");
+      if (questionInput) {
+        questionInput.focus();
+      }
+    }
+  };
+
+  if (!isExpanded) {
+    return (
+      <Button 
+        onClick={() => setIsExpanded(true)}
+        variant="outline"
+        className="w-full py-8 border-dashed"
+      >
+        <Plus className="mr-2 h-4 w-4" /> Ajouter une carte
+      </Button>
+    );
+  }
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-lg">Nouvelle carte</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={(e) => handleSubmit(e)} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="question" className="text-sm font-medium">
+              Question
+            </label>
+            <Textarea
+              id="question"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Entrez votre question"
+              required
+              className="min-h-[100px]"
+              autoFocus
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="answer" className="text-sm font-medium">
+              Réponse
+            </label>
+            <Textarea
+              id="answer"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Entrez la réponse"
+              required
+              className="min-h-[100px]"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsExpanded(false)}
+            >
+              Annuler
+            </Button>
+            <Button 
+              type="button"
+              variant="outline"
+              onClick={(e) => handleSubmit(e, true)}
+            >
+              Enregistrer et ajouter
+            </Button>
+            <Button type="submit">Enregistrer</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
 const FlashcardManager: React.FC = () => {
   const params = useParams();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeckDialogOpen, setIsDeckDialogOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Flashcard | undefined>(undefined);
   const [editingDeck, setEditingDeck] = useState<Deck | undefined>(undefined);
@@ -457,7 +562,7 @@ const FlashcardManager: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to load decks:', err);
-      toast.error('Failed to load decks');
+      toast.error('Impossible de charger les paquets');
     }
   }, [params.id, selectedDeckId]);
 
@@ -470,10 +575,10 @@ const FlashcardManager: React.FC = () => {
       const { deck } = await createDeck(params.id as string, data);
       setDecks([...decks, convertToDeck(deck)]);
       setIsDeckDialogOpen(false);
-      toast.success('Deck created successfully!');
+      toast.success('Paquet créé avec succès !');
     } catch (err) {
       console.error('Error creating deck:', err);
-      toast.error('Failed to create deck');
+      toast.error('Impossible de créer le paquet');
     }
   };
 
@@ -483,10 +588,10 @@ const FlashcardManager: React.FC = () => {
       const { deck } = await updateDeck(params.id as string, editingDeck.id, data);
       setDecks(decks.map(d => d.id === deck.id ? convertToDeck(deck) : d));
       setEditingDeck(undefined);
-      toast.success('Deck updated successfully!');
+      toast.success('Paquet mis à jour avec succès !');
     } catch (err) {
       console.error('Error updating deck:', err);
-      toast.error('Failed to update deck');
+      toast.error('Impossible de mettre à jour le paquet');
     }
   };
 
@@ -497,17 +602,17 @@ const FlashcardManager: React.FC = () => {
       if (selectedDeckId === id) {
         setSelectedDeckId(decks[0]?.id || null);
       }
-      toast.success('Deck deleted successfully!');
+      toast.success('Paquet supprimé avec succès !');
     } catch (err) {
       console.error('Error deleting deck:', err);
-      toast.error('Failed to delete deck');
+      toast.error('Impossible de supprimer le paquet');
     }
   };
 
   const handleCreateFlashcard = async (data: Flashcard) => {
     try {
       if (!selectedDeckId) {
-        toast.error('Please select a deck first');
+        toast.error('Veuillez sélectionner un paquet');
         return;
       }
 
@@ -525,11 +630,10 @@ const FlashcardManager: React.FC = () => {
           ? { ...deck, flashcards: [...deck.flashcards, newCard] }
           : deck
       ));
-      setIsDialogOpen(false);
-      toast.success('Flashcard created successfully!');
+      toast.success('Carte créée avec succès !');
     } catch (err) {
       console.error('Error creating flashcard:', err);
-      toast.error(err instanceof Error ? err.message : 'Error creating flashcard');
+      toast.error(err instanceof Error ? err.message : 'Impossible de créer la carte');
     }
   };
 
@@ -546,10 +650,10 @@ const FlashcardManager: React.FC = () => {
           : deck
       ));
       setEditingCard(undefined);
-      toast.success('Flashcard updated successfully!');
+      toast.success('Carte mise à jour avec succès !');
     } catch (err) {
       console.error('Error updating flashcard:', err);
-      toast.error('Failed to update flashcard');
+      toast.error('Impossible de mettre à jour la carte');
     }
   };
 
@@ -561,10 +665,10 @@ const FlashcardManager: React.FC = () => {
           ? { ...deck, flashcards: deck.flashcards.filter(card => card.id !== id) }
           : deck
       ));
-      toast.success('Flashcard deleted successfully!');
+      toast.success('Carte supprimée avec succès !');
     } catch (err) {
       console.error('Error deleting flashcard:', err);
-      toast.error('Failed to delete flashcard');
+      toast.error('Impossible de supprimer la carte');
     }
   };
 
@@ -581,10 +685,10 @@ const FlashcardManager: React.FC = () => {
         return newStats;
       });
 
-      toast.success('Progress updated successfully!');
+      toast.success('Progression mise à jour avec succès !');
     } catch (err) {
       console.error('Error updating progress:', err);
-      toast.error('Failed to update progress');
+      toast.error('Impossible de mettre à jour la progression');
     }
   };
 
@@ -681,8 +785,65 @@ const FlashcardManager: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-8 text-center">Flashcard Manager</h1>
+    <div className="space-y-8">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Cartes révisées aujourd&apos;hui
+            </CardTitle>
+            <Brain className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.reviewedToday}</div>
+            <p className="text-xs text-muted-foreground">
+              sur {stats.totalCards} cartes
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Maîtrise globale
+            </CardTitle>
+            <PenLine className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.masteryPercentage}%</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.wellKnown} cartes bien maîtrisées
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              À réviser
+            </CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.needsReview}</div>
+            <p className="text-xs text-muted-foreground">
+              cartes à revoir aujourd&apos;hui
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              En apprentissage
+            </CardTitle>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.learning}</div>
+            <p className="text-xs text-muted-foreground">
+              cartes en cours d&apos;apprentissage
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="mb-8 flex items-center gap-4">
         <div className="flex-1">
@@ -691,10 +852,10 @@ const FlashcardManager: React.FC = () => {
             value={selectedDeckId || ""}
             onChange={(e) => setSelectedDeckId(e.target.value || null)}
           >
-            <option value="">Select a Deck</option>
+            <option value="">Sélectionner un paquet</option>
             {decks.map((deck) => (
               <option key={deck.id} value={deck.id}>
-                {deck.name} ({deck.flashcards.length} cards)
+                {deck.name} ({deck.flashcards.length} cartes)
               </option>
             ))}
           </select>
@@ -702,12 +863,12 @@ const FlashcardManager: React.FC = () => {
         <Dialog open={isDeckDialogOpen} onOpenChange={setIsDeckDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Folder className="mr-2 h-4 w-4" /> Create Deck
+              <Folder className="mr-2 h-4 w-4" /> Créer un paquet
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Deck</DialogTitle>
+              <DialogTitle>Créer un nouveau paquet</DialogTitle>
             </DialogHeader>
             <DeckForm
               onSubmit={handleCreateDeck}
@@ -718,25 +879,25 @@ const FlashcardManager: React.FC = () => {
         {selectedDeckId && (
           <>
             <Button onClick={() => currentDeck && setEditingDeck(currentDeck)}>
-              <Edit className="mr-2 h-4 w-4" /> Edit Deck
+              <Edit className="mr-2 h-4 w-4" /> Modifier le paquet
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete Deck
+                  <Trash2 className="mr-2 h-4 w-4" /> Supprimer le paquet
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Deck</AlertDialogTitle>
+                  <AlertDialogTitle>Supprimer le paquet</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this deck? This will also delete all flashcards in this deck.
+                    Êtes-vous sûr de vouloir supprimer ce paquet ? Cela supprimera également toutes les cartes qu&apos;il contient.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
                   <AlertDialogAction onClick={() => handleDeleteDeck(selectedDeckId)}>
-                    Delete
+                    Supprimer
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -749,7 +910,7 @@ const FlashcardManager: React.FC = () => {
         <Dialog open={!!editingDeck} onOpenChange={() => setEditingDeck(undefined)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Deck</DialogTitle>
+              <DialogTitle>Modifier le paquet</DialogTitle>
             </DialogHeader>
             <DeckForm
               initialData={editingDeck}
@@ -760,255 +921,99 @@ const FlashcardManager: React.FC = () => {
         </Dialog>
       )}
 
-      <Tabs defaultValue="cards" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="cards" className="flex items-center gap-2">
-            <PenLine className="h-4 w-4" />
-            <span>My Flashcards</span>
-          </TabsTrigger>
-          <TabsTrigger value="study" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            <span>Study</span>
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            <span>Statistics</span>
-          </TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Input
+            type="text"
+            placeholder="Rechercher des cartes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
 
-        <TabsContent value="cards">
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div className="relative w-full sm:w-64">
-              <Input
-                placeholder="Search flashcards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            {selectedDeckId && (
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="shrink-0">
-                    <Plus className="mr-2 h-4 w-4" /> Create Flashcard
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Flashcard</DialogTitle>
-                  </DialogHeader>
-                  <FlashcardForm
-                    onSubmit={handleCreateFlashcard}
-                    onCancel={() => setIsDialogOpen(false)}
-                  />
-                </DialogContent>
-              </Dialog>
+        <Tabs defaultValue="all" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="all">Toutes les cartes</TabsTrigger>
+            <TabsTrigger value="study">Étudier</TabsTrigger>
+          </TabsList>
+          <TabsContent value="all" className="space-y-4">
+            {!selectedDeckId ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  Veuillez sélectionner un paquet ou en créer un nouveau pour gérer vos cartes.
+                </p>
+                <Button
+                  onClick={() => setIsDeckDialogOpen(true)}
+                  variant="outline"
+                  className="mx-auto"
+                >
+                  <Folder className="mr-2 h-4 w-4" /> Créer un paquet
+                </Button>
+              </div>
+            ) : (
+              <>
+                <QuickAddFlashcard onSubmit={handleCreateFlashcard} />
+                {filteredFlashcards.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">
+                      Aucune carte n&apos;a été trouvée dans ce paquet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredFlashcards.map((card) => (
+                      <FlashcardItem
+                        key={card.id}
+                        flashcard={card}
+                        onEdit={handleEditFlashcard}
+                        onDelete={(id) => handleDeleteFlashcard(id, card.deckId)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
-          </div>
-
-          {!selectedDeckId ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                Please select a deck or create a new one to manage flashcards.
-              </p>
-              <Button
-                onClick={() => setIsDeckDialogOpen(true)}
-                variant="outline"
-                className="mx-auto"
-              >
-                <Folder className="mr-2 h-4 w-4" /> Create Deck
-              </Button>
-            </div>
-          ) : filteredFlashcards.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                No flashcards found in this deck. Create your first flashcard to get started!
-              </p>
-              <Button
-                onClick={() => setIsDialogOpen(true)}
-                variant="outline"
-                className="mx-auto"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Create Flashcard
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredFlashcards.map((card) => (
-                <FlashcardItem
-                  key={card.id}
-                  flashcard={card}
-                  onEdit={handleEditFlashcard}
-                  onDelete={(id) => handleDeleteFlashcard(id, card.deckId)}
-                />
-              ))}
-            </div>
-          )}
-
-          {editingCard && (
-            <Dialog open={!!editingCard} onOpenChange={() => setEditingCard(undefined)}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Flashcard</DialogTitle>
-                </DialogHeader>
-                <FlashcardForm
-                  initialData={editingCard}
-                  onSubmit={handleUpdateFlashcard}
-                  onCancel={() => setEditingCard(undefined)}
-                />
-              </DialogContent>
-            </Dialog>
-          )}
-        </TabsContent>
-
-        <TabsContent value="study">
-          {!selectedDeckId ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                Please select a deck to start studying.
-              </p>
-            </div>
-          ) : currentFlashcards.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                No flashcards to study in this deck. Create some flashcards first!
-              </p>
-              <Button
-                onClick={() => setIsDialogOpen(true)}
-                variant="outline"
-                className="mx-auto"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Create Flashcard
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mb-6 text-center">
-                <p className="text-muted-foreground">
-                  Card {currentStudyIndex + 1} of {currentFlashcards.length}
+          </TabsContent>
+          <TabsContent value="study" className="space-y-4">
+            {!selectedDeckId ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  Veuillez sélectionner un paquet pour commencer à étudier.
                 </p>
               </div>
+            ) : currentFlashcards.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  Aucune carte à étudier dans ce paquet.
+                </p>
+              </div>
+            ) : (
               <StudyCard
                 flashcard={currentFlashcards[currentStudyIndex]}
                 onNext={handleNextCard}
                 onMarkDifficulty={handleMarkDifficulty}
                 sessionStats={studySessionStats}
               />
-            </>
-          )}
-        </TabsContent>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
 
-        <TabsContent value="stats">
-          <Card>
-            <CardHeader>
-              <CardTitle>Flashcard Statistics</CardTitle>
-              <CardDescription>
-                Track your progress and see how well you&apos;re doing
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="bg-muted/50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Total Cards</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">{stats.totalCards}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-muted/50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Reviewed Today</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">{stats.reviewedToday}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-muted/50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Needs Review</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">{stats.needsReview}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium">Learning Progress</h3>
-                  <div className="flex h-4 rounded-full overflow-hidden">
-                    {stats.totalCards > 0 ? (
-                      <>
-                        <div 
-                          className="bg-green-500" 
-                          style={{ width: `${(stats.wellKnown / stats.totalCards) * 100}%` }}
-                        />
-                        <div 
-                          className="bg-yellow-500" 
-                          style={{ width: `${(stats.learning / stats.totalCards) * 100}%` }}
-                        />
-                        <div 
-                          className="bg-red-500" 
-                          style={{ width: `${(stats.difficult / stats.totalCards) * 100}%` }}
-                        />
-                        <div 
-                          className="bg-gray-300" 
-                          style={{ width: `${(stats.notStudied / stats.totalCards) * 100}%` }}
-                        />
-                      </>
-                    ) : (
-                      <div className="bg-gray-300 w-full" />
-                    )}
-                  </div>
-                  <div className="flex text-sm justify-between">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      <span>Well Known: {stats.wellKnown}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <span>Learning: {stats.learning}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
-                      <span>Difficult: {stats.difficult}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-gray-300" />
-                      <span>Not Studied: {stats.notStudied}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium">Decks Overview</h3>
-                  <div className="grid gap-2">
-                    {decks.map(deck => (
-                      <Card key={deck.id} className="p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium">{deck.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {deck.flashcards.length} cards
-                            </p>
-                          </div>
-                          <Button
-                            variant="outline"
-                            onClick={() => setSelectedDeckId(deck.id)}
-                          >
-                            View Deck
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {editingCard && (
+        <Dialog open={!!editingCard} onOpenChange={() => setEditingCard(undefined)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Modifier la carte</DialogTitle>
+            </DialogHeader>
+            <FlashcardForm
+              initialData={editingCard}
+              onSubmit={handleUpdateFlashcard}
+              onCancel={() => setEditingCard(undefined)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

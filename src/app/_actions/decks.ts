@@ -9,7 +9,7 @@ export async function getProjectDecks(projectId: string) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -34,13 +34,13 @@ export async function getProjectDecks(projectId: string) {
     });
 
     if (!userProject) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     return { decks: userProject.decks };
   } catch (error) {
     console.error('[GET_DECKS]', error);
-    throw new Error('Failed to get decks');
+    throw new Error('Impossible de récupérer les paquets');
   }
 }
 
@@ -48,7 +48,7 @@ export async function createDeck(projectId: string, data: { name: string; descri
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -66,7 +66,7 @@ export async function createDeck(projectId: string, data: { name: string; descri
     });
 
     if (!userOrg) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     const deck = await prisma.deck.create({
@@ -84,7 +84,7 @@ export async function createDeck(projectId: string, data: { name: string; descri
     return { deck };
   } catch (error) {
     console.error('[CREATE_DECK]', error);
-    throw new Error('Failed to create deck');
+    throw new Error('Impossible de créer le paquet');
   }
 }
 
@@ -92,7 +92,7 @@ export async function updateDeck(projectId: string, deckId: string, data: { name
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -110,7 +110,7 @@ export async function updateDeck(projectId: string, deckId: string, data: { name
     });
 
     if (!userOrg) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     const deck = await prisma.deck.update({
@@ -131,7 +131,7 @@ export async function updateDeck(projectId: string, deckId: string, data: { name
     return { deck };
   } catch (error) {
     console.error('[UPDATE_DECK]', error);
-    throw new Error('Failed to update deck');
+    throw new Error('Impossible de mettre à jour le paquet');
   }
 }
 
@@ -139,7 +139,7 @@ export async function deleteDeck(projectId: string, deckId: string) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      throw new Error('Unauthorized');
+      throw new Error('Non autorisé');
     }
 
     // Vérifier l'accès via UserOrganization
@@ -157,7 +157,7 @@ export async function deleteDeck(projectId: string, deckId: string) {
     });
 
     if (!userOrg) {
-      throw new Error('Project not found or access denied');
+      throw new Error('Projet non trouvé ou accès refusé');
     }
 
     await prisma.deck.delete({
@@ -171,6 +171,6 @@ export async function deleteDeck(projectId: string, deckId: string) {
     return { success: true };
   } catch (error) {
     console.error('[DELETE_DECK]', error);
-    throw new Error('Failed to delete deck');
+    throw new Error('Impossible de supprimer le paquet');
   }
 } 

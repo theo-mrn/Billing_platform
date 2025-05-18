@@ -174,31 +174,6 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
     }
   };
 
-  const markAsDone = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    setCongratsTaskId(taskId);
-    setShowCongrats(true);
-
-    // Si c'est une tâche récurrente, on met à jour sa dernière récurrence
-    if (task.recurrenceType !== 'NONE') {
-      await fetch(`/api/projects/${projectId}/kanban/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          lastRecurrence: new Date(),
-        }),
-      });
-      
-      // Vérifier si une nouvelle instance doit être créée
-      await checkAndCreateRecurringTasks(projectId);
-    }
-  };
-
-  // Fonction pour sauvegarder le temps restant à la pause ou à la fin
   const handlePauseOrFinish = async (taskId: string, value: number) => {
     setActiveTaskId(null);
     await fetch(`/api/projects/${projectId}/kanban/tasks/${taskId}`, {
@@ -359,19 +334,19 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
   };
 
   return (
-    <aside className="w-full max-w-xs p-4 bg-background rounded-xl flex flex-col gap-4 border border-border shadow-sm">
+    <aside className="w-full max-w-[400px] pl-4 pt-4 pb-4 bg-background rounded-l-xl flex flex-col gap-4 border-l border-y border-border shadow-sm">
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="font-bold text-lg text-foreground">Aujourd&apos;hui</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{doneCount}/{totalEst} DONE</span>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={`/projects/${projectId}/kanban`} className="flex items-center gap-1 text-xs">
-                <KanbanSquare className="h-4 w-4" />
-                Vue Kanban
-              </Link>
-            </Button>
+          <div className="flex items-center gap-3">
+            <span className="font-medium text-base">{doneCount}/{totalEst}</span>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">Tâches terminées</div>
           </div>
+          <Button variant="ghost" size="sm" asChild className="px-2">
+            <Link href={`/projects/${projectId}/kanban`} className="flex items-center gap-1.5">
+              <KanbanSquare className="h-4 w-4" />
+              <span className="text-xs">Kanban</span>
+            </Link>
+          </Button>
         </div>
         <div className="w-full h-2 bg-muted rounded-full mb-4">
           <div
@@ -407,16 +382,34 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     // Passe la tâche en done ici
                     const doneStatus = statuses.find(s => s.name.toLowerCase().includes("done") || s.name.toLowerCase().includes("terminé"));
                     if (!doneStatus) { setShowCongrats(false); setCongratsTaskId(null); return; }
-                    await fetch(`/api/projects/${projectId}/kanban/tasks/${task.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ statusId: doneStatus.id })
-                    });
-                    await addXPForTaskCompletion();
-                    setTasks(tasks.map(t => t.id === task.id ? { ...t, status: doneStatus } : t));
+                    
+                    // Optimistic update - mettre à jour l'UI immédiatement
+                    const updatedTask = { ...task, status: doneStatus };
+                    setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
+                    updateTask(updatedTask);
                     setShowCongrats(false);
                     setCongratsTaskId(null);
-                    updateTask({ ...task, status: doneStatus });
+
+                    try {
+                      // Effectuer les requêtes en arrière-plan
+                      await Promise.all([
+                        fetch(`/api/projects/${projectId}/kanban/tasks/${task.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ statusId: doneStatus.id })
+                        }),
+                        addXPForTaskCompletion()
+                      ]);
+                    } catch (error) {
+                      // En cas d'erreur, revenir à l'état précédent
+                      console.error('Failed to complete task:', error);
+                      const previousStatus = statuses.find(s => s.name.toLowerCase().includes("progress"));
+                      if (previousStatus) {
+                        const revertedTask = { ...task, status: previousStatus };
+                        setTasks(tasks.map(t => t.id === task.id ? revertedTask : t));
+                        updateTask(revertedTask);
+                      }
+                    }
                   }} className="w-full mt-2">Suivant</Button>
                 </div>
               );
@@ -424,62 +417,87 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
             return (
               <div
                 key={task.id}
-                className="group relative flex items-center justify-between gap-2 p-5 rounded-lg bg-muted hover:bg-accent/70 transition cursor-pointer border border-border min-h-[72px]"
+                className="group relative flex items-center justify-between gap-2 p-3 rounded-lg bg-muted hover:bg-accent/70 transition cursor-pointer border border-border min-h-[60px]"
               >
                 {/* Nom et infos de la tâche, masqués au hover */}
                 <div className="flex-1 transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none">
-                  <span className="font-medium text-lg text-foreground">{task.title}</span>
-                  <div className="flex items-center gap-2 mt-2">
+                  <span className="font-medium text-base text-foreground line-clamp-1">{task.title}</span>
+                  <div className="flex items-center gap-2 mt-1">
                     {showTimer && <TaskTimer timeLeft={isActive ? timerValue : task.durationSeconds || 0} />}
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2 group-hover:opacity-0 group-hover:pointer-events-none transition-all duration-200">
+                <div className="flex flex-col items-end gap-1.5 group-hover:opacity-0 group-hover:pointer-events-none transition-all duration-200">
                   <PriorityBadge priority={task.priority} />
                 </div>
                 {/* Actions au hover, centrées */}
-                <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10">
+                <div className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10">
                   {isActive ? (
                     <button
                       title="Pause"
                       onClick={() => handlePause(task.id)}
-                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
+                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1.5 shadow-sm"
                     >
-                      <Pause size={20} />
+                      <Pause size={16} />
                     </button>
                   ) : (
                     <button
                       title="Démarrer"
                       onClick={() => setActiveTaskId(task.id)}
-                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
+                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1.5 shadow-sm"
                     >
-                      <Play size={20} />
+                      <Play size={16} />
                     </button>
                   )}
                   <button
                     title="Marquer comme terminé"
                     onClick={async () => {
-                      markAsDone(task.id);
+                      const doneStatus = statuses.find(s => s.name.toLowerCase().includes("done") || s.name.toLowerCase().includes("terminé"));
+                      if (!doneStatus) return;
+
+                      // Optimistic update pour les félicitations
+                      setCongratsTaskId(task.id);
+                      setShowCongrats(true);
+
+                      try {
+                        // Mettre à jour la dernière récurrence en arrière-plan si nécessaire
+                        if (task.recurrenceType !== 'NONE') {
+                          await fetch(`/api/projects/${projectId}/kanban/tasks/${task.id}`, {
+                            method: 'PATCH',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                              lastRecurrence: new Date(),
+                            }),
+                          });
+                          
+                          // Vérifier les tâches récurrentes en arrière-plan
+                          checkAndCreateRecurringTasks(projectId).catch(console.error);
+                        }
+                      } catch (error) {
+                        console.error('Failed to update task recurrence:', error);
+                      }
                     }}
-                    className="bg-primary hover:bg-primary/90 text-background rounded-full p-1 shadow"
+                    className="bg-primary hover:bg-primary/90 text-background rounded-full p-1.5 shadow-sm"
                   >
-                    <CheckCircle size={20} />
+                    <CheckCircle size={16} />
                   </button>
                   <button
                     title="Éditer"
                     onClick={() => openEdit(task)}
-                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
+                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1.5 shadow-sm"
                   >
-                    <Pencil size={20} />
+                    <Pencil size={16} />
                   </button>
                   <button
                     title={showTimer ? 'Masquer le timer' : 'Afficher le timer'}
                     onClick={e => {
                       e.stopPropagation();
-                      setShowTimers(st => ({ ...st, [task.id]: !showTimer }));
+                      setShowTimers(st => ({ ...st, [task.id]: !st[task.id] }));
                     }}
-                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
+                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1.5 shadow-sm"
                   >
-                    {showTimer ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showTimer ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                   <button
                     title="Informations"
@@ -488,9 +506,9 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                       setInfoTask(task);
                       setIsInfoOpen(true);
                     }}
-                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
+                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1.5 shadow-sm"
                   >
-                    <Info size={20} />
+                    <Info size={16} />
                   </button>
                   <button
                     title="Supprimer"
@@ -498,9 +516,9 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                       e.stopPropagation();
                       handleDeleteTask(task.id);
                     }}
-                    className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-1 shadow"
+                    className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-1.5 shadow-sm"
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -518,7 +536,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
           {plannedTasks.map((task) => {
             if (showCongrats && congratsTaskId === task.id) {
               return (
-                <div key={task.id} className="flex flex-col items-center justify-center gap-4 p-4 rounded-lg bg-muted border border-border min-h-[180px] animate-fade-in">
+                <div key={task.id} className="flex flex-col items-center justify-center gap-4 p-4 rounded-lg bg-muted min-h-[180px] animate-fade-in">
                   <div className="text-xl font-bold text-center">Well done! <span role="img" aria-label="explosion">💥</span></div>
                   <div className="w-32 h-32 bg-gray-300 flex items-center justify-center rounded-full text-3xl font-bold text-gray-500">🎉</div>
                   <div className="text-center text-base font-medium">Tu as terminé <b>{task.title}</b> !</div>
@@ -526,16 +544,34 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     // Passe la tâche en done ici
                     const doneStatus = statuses.find(s => s.name.toLowerCase().includes("done") || s.name.toLowerCase().includes("terminé"));
                     if (!doneStatus) { setShowCongrats(false); setCongratsTaskId(null); return; }
-                    await fetch(`/api/projects/${projectId}/kanban/tasks/${task.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ statusId: doneStatus.id })
-                    });
-                    await addXPForTaskCompletion();
-                    setTasks(tasks.map(t => t.id === task.id ? { ...t, status: doneStatus } : t));
+                    
+                    // Optimistic update - mettre à jour l'UI immédiatement
+                    const updatedTask = { ...task, status: doneStatus };
+                    setTasks(tasks.map(t => t.id === task.id ? updatedTask : t));
+                    updateTask(updatedTask);
                     setShowCongrats(false);
                     setCongratsTaskId(null);
-                    updateTask({ ...task, status: doneStatus });
+
+                    try {
+                      // Effectuer les requêtes en arrière-plan
+                      await Promise.all([
+                        fetch(`/api/projects/${projectId}/kanban/tasks/${task.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ statusId: doneStatus.id })
+                        }),
+                        addXPForTaskCompletion()
+                      ]);
+                    } catch (error) {
+                      // En cas d'erreur, revenir à l'état précédent
+                      console.error('Failed to complete task:', error);
+                      const previousStatus = statuses.find(s => s.name.toLowerCase().includes("progress"));
+                      if (previousStatus) {
+                        const revertedTask = { ...task, status: previousStatus };
+                        setTasks(tasks.map(t => t.id === task.id ? revertedTask : t));
+                        updateTask(revertedTask);
+                      }
+                    }
                   }} className="w-full mt-2">Suivant</Button>
                 </div>
               );
@@ -543,7 +579,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
             return (
               <div
                 key={task.id}
-                className="group relative flex items-center justify-between gap-2 p-4 rounded-md bg-muted/60 border border-border min-h-[60px] text-base"
+                className="group relative flex items-center justify-between gap-2 p-2.5 rounded-md bg-muted/60 border border-border min-h-[48px] text-sm"
               >
                 <div className="flex-1 truncate text-muted-foreground font-medium transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none">
                   {task.title}
@@ -553,7 +589,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                   <button
                     title="Commencer"
                     onClick={() => setTaskStatus(task.id, "In Progress")}
-                    className="flex items-center gap-2 bg-muted-foreground/10 hover:bg-primary/80 text-primary hover:text-white rounded-full px-4 py-2 transition text-base font-semibold"
+                    className="flex items-center gap-1.5 bg-muted-foreground/10 hover:bg-primary/80 text-primary hover:text-white rounded-full px-3 py-1.5 transition text-sm font-medium"
                   >
                       <span>Commencer</span>
                     <Play size={12} />
@@ -565,9 +601,9 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     e.stopPropagation();
                     handleDeleteTask(task.id);
                   }}
-                  className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-1 shadow"
+                  className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-1 shadow-sm"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={12} />
                 </button>
               </div>
             );
@@ -582,9 +618,9 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
         <CardContent className="flex flex-col gap-2">
           {doneTasks.length === 0 && <span className="text-muted-foreground text-sm">Aucune tâche terminée.</span>}
           {doneTasks.map((task) => (
-            <div key={task.id} className="group relative flex items-center gap-3 p-3 rounded-md bg-muted/30 text-muted-foreground border border-border/50 min-h-[44px]">
-              <CheckCircle className="w-4 h-4 text-primary/50 flex-shrink-0" />
-              <div className="flex-1 truncate font-medium text-sm transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none line-through decoration-primary/50">
+            <div key={task.id} className="group relative flex items-center gap-2 p-2.5 rounded-md bg-muted/30 text-muted-foreground border border-border/50 min-h-[40px]">
+              <CheckCircle className="w-3.5 h-3.5 text-primary/50 flex-shrink-0" />
+              <div className="flex-1 truncate font-medium text-xs transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none line-through decoration-primary/50">
                 {task.title}
               </div>
               {/* Actions au hover, centrées */}
@@ -602,10 +638,10 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     setTasks(tasks.map(t => t.id === task.id ? { ...t, status: plannedStatus } : t));
                     updateTask({ ...task, status: plannedStatus });
                   }}
-                  className="flex items-center gap-2 bg-muted-foreground/10 hover:bg-primary/80 text-primary hover:text-white rounded-full px-3 py-1 transition text-sm font-semibold"
+                  className="flex items-center gap-1.5 bg-muted-foreground/10 hover:bg-primary/80 text-primary hover:text-white rounded-full px-2.5 py-1 transition text-xs font-medium"
                 >
                   <span>Restaurer</span>
-                  <Undo2 size={16} />
+                  <Undo2 size={12} />
                 </button>
                 <button
                   title="Supprimer"
@@ -613,9 +649,9 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     e.stopPropagation();
                     handleDeleteTask(task.id);
                   }}
-                  className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-2 shadow"
+                  className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-1.5 shadow-sm ml-1.5"
                 >
-                  <Trash2 size={20} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>

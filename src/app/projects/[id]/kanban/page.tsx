@@ -135,7 +135,7 @@ const KanbanPage: FC = () => {
           setTasks(data.tasks);
         }
       } catch (error) {
-        console.error('Failed to fetch kanban data:', error);
+        console.error('Impossible de récupérer les données du kanban:', error);
       }
     };
 
@@ -166,7 +166,7 @@ const KanbanPage: FC = () => {
         ));
       }
     } catch (error) {
-      console.error('Failed to update task status:', error);
+      console.error('Impossible de mettre à jour le statut de la tâche:', error);
     }
   };
 
@@ -213,7 +213,7 @@ const KanbanPage: FC = () => {
         setIsDialogOpen(false);
       }
     } catch (error) {
-      console.error('Failed to create task:', error);
+      console.error('Impossible de créer la tâche:', error);
     }
   };
 
@@ -245,7 +245,7 @@ const KanbanPage: FC = () => {
         setIsEditMode(false);
       }
     } catch (error) {
-      console.error('Failed to update task:', error);
+      console.error('Impossible de mettre à jour la tâche:', error);
     }
   };
 
@@ -261,7 +261,7 @@ const KanbanPage: FC = () => {
   // };
 
   if (!board || !statuses.length) {
-    return <div>Loading...</div>;
+    return <div>Chargement...</div>;
   }
 
   return (
@@ -269,16 +269,16 @@ const KanbanPage: FC = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Add New Task</DialogTitle>
+            <DialogTitle>Nouvelle tâche</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">Titre</Label>
               <Input
                 id="title"
                 value={newTask.title}
                 onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                placeholder="Task title"
+                placeholder="Titre de la tâche"
                 className="w-full"
               />
             </div>
@@ -289,20 +289,20 @@ const KanbanPage: FC = () => {
                 value={newTask.description}
                 onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                 className="min-h-[150px]"
-                placeholder="Task description"
+                placeholder="Description de la tâche"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="groupName">Group</Label>
+              <Label htmlFor="groupName">Groupe</Label>
               <Input
                 id="groupName"
                 value={newTask.groupName}
                 onChange={(e) => setNewTask({ ...newTask, groupName: e.target.value })}
-                placeholder="Add group"
+                placeholder="Ajouter un groupe"
               />
             </div>
             <div className="space-y-2">
-              <Label>Due Date</Label>
+              <Label>Date d&apos;échéance</Label>
               <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <Button
@@ -313,7 +313,7 @@ const KanbanPage: FC = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {newTask.plannedEndAt ? format(newTask.plannedEndAt, "PPP") : <span>Pick a date</span>}
+                    {newTask.plannedEndAt ? format(newTask.plannedEndAt, "PPP") : <span>Choisir une date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent 
@@ -333,7 +333,7 @@ const KanbanPage: FC = () => {
                     <div className="border-t border-border p-3">
                       <div className="flex items-center gap-3">
                         <Label htmlFor={timeInputId} className="text-xs">
-                          Enter time
+                          Heure
                         </Label>
                         <div className="relative grow">
                           <input
@@ -359,7 +359,7 @@ const KanbanPage: FC = () => {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label>Priority</Label>
+              <Label>Priorité</Label>
               <div className="flex gap-2">
                 {(['HIGH', 'MEDIUM', 'LOW'] as const).map((priority) => (
                   <Button
@@ -372,7 +372,7 @@ const KanbanPage: FC = () => {
                     )}
                     onClick={() => setNewTask({ ...newTask, priority })}
                   >
-                    {priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()}
+                    {priority === 'HIGH' ? 'Haute' : priority === 'MEDIUM' ? 'Moyenne' : 'Basse'}
                   </Button>
                 ))}
               </div>
@@ -412,7 +412,7 @@ const KanbanPage: FC = () => {
               />
             </div>
             <Button onClick={handleAddTask} className="w-full">
-              Add Task
+              Ajouter la tâche
             </Button>
           </div>
         </DialogContent>
@@ -428,13 +428,13 @@ const KanbanPage: FC = () => {
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex justify-between items-center">
-              <span>{isEditMode ? "Edit Task" : "Task Details"}</span>
+              <span>{isEditMode ? "Modifier la tâche" : "Détails de la tâche"}</span>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-4">
             <div className="grid gap-6">
               <div className="space-y-2">
-                <Label htmlFor="edit-title" className="text-sm font-medium">Title</Label>
+                <Label htmlFor="edit-title" className="text-sm font-medium">Titre</Label>
                 {isEditMode ? (
                   <Input
                     id="edit-title"
@@ -468,7 +468,7 @@ const KanbanPage: FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Due Date</Label>
+                <Label className="text-sm font-medium">Date d&apos;échéance</Label>
                 {isEditMode ? (
                   <Popover modal={true}>
                     <PopoverTrigger asChild>
@@ -480,7 +480,7 @@ const KanbanPage: FC = () => {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {editingTask?.plannedEndAt ? format(new Date(editingTask.plannedEndAt), "PPP") : "Pick a date"}
+                        {editingTask?.plannedEndAt ? format(new Date(editingTask.plannedEndAt), "PPP") : "Choisir une date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent 
@@ -506,7 +506,7 @@ const KanbanPage: FC = () => {
                         <div className="border-t border-border p-3">
                           <div className="flex items-center gap-3">
                             <Label htmlFor={timeInputId} className="text-xs">
-                              Enter time
+                              Heure
                             </Label>
                             <div className="relative grow">
                               <input
@@ -537,13 +537,13 @@ const KanbanPage: FC = () => {
                   </Popover>
                 ) : (
                   <div className="p-3 rounded-md bg-muted/50 text-sm">
-                    {editingTask?.plannedEndAt ? format(new Date(editingTask.plannedEndAt), "PPP 'at' HH:mm") : "No date set"}
+                    {editingTask?.plannedEndAt ? format(new Date(editingTask.plannedEndAt), "PPP 'à' HH:mm") : "Aucune date définie"}
                   </div>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Status</Label>
+                <Label className="text-sm font-medium">Statut</Label>
                 {isEditMode ? (
                   <div className="flex gap-2">
                     {statuses.map((status) => (
@@ -570,7 +570,7 @@ const KanbanPage: FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Priority</Label>
+                <Label className="text-sm font-medium">Priorité</Label>
                 {isEditMode ? (
                   <div className="flex gap-2">
                     {(['HIGH', 'MEDIUM', 'LOW'] as const).map((priority) => (
@@ -590,14 +590,14 @@ const KanbanPage: FC = () => {
                           });
                         }}
                       >
-                        {priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()}
+                        {priority === 'HIGH' ? 'Haute' : priority === 'MEDIUM' ? 'Moyenne' : 'Basse'}
                       </Button>
                     ))}
                   </div>
                 ) : (
                   <div className="p-3 rounded-md bg-muted/50 text-sm flex items-center gap-2">
                     <Badge className={cn("text-xs h-6 px-2", getPriorityColor(editingTask?.priority || 'MEDIUM'))}>
-                      {editingTask?.priority.toLowerCase()}
+                      {editingTask?.priority === 'HIGH' ? 'Haute' : editingTask?.priority === 'MEDIUM' ? 'Moyenne' : 'Basse'}
                     </Badge>
                   </div>
                 )}
@@ -674,7 +674,7 @@ const KanbanPage: FC = () => {
                   onClick={handleUpdateTask}
                   className="flex-1"
                 >
-                  Save Changes
+                  Enregistrer les modifications
                 </Button>
                 <Button 
                   variant="outline"
@@ -683,7 +683,7 @@ const KanbanPage: FC = () => {
                   }}
                   className="flex-1"
                 >
-                  Cancel
+                  Annuler
                 </Button>
               </div>
             ) : (
@@ -696,13 +696,13 @@ const KanbanPage: FC = () => {
                   }} 
                   className="flex-1"
                 >
-                  Close
+                  Fermer
                 </Button>
                 <Button
                   onClick={() => setIsEditMode(true)}
                   className="flex-1"
                 >
-                  Edit
+                  Modifier
                 </Button>
               </div>
             )}

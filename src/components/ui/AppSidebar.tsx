@@ -39,6 +39,7 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import Pomodoro from "@/components/Pomodoro"
 import { useState } from "react"
+import { MusicPlayer } from "./MusicPlayer"
 
 const globalNavigationItems = [
   {
@@ -126,6 +127,9 @@ export function AppSidebar() {
         </div>
         <div className="px-3">
           <Pomodoro />
+        </div>
+        <div className="px-3">
+          <MusicPlayer />
         </div>
       </SidebarHeader>
       <SidebarContent>
