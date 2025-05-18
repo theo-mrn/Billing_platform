@@ -11,19 +11,23 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar2"
 import {
-  BarChart3,
-  CreditCard,
-  Home,
   Moon,
   LogOut,
   UserCircle,
-  ChartNoAxesCombined
+  //ChartNoAxesCombined,
+  Layout,
+  FileText,
+  BrainCircuit,
+  ListTodo,
+  Home,
+  CreditCard
 } from "lucide-react"
 import { useTheme } from "@/lib/themes"
 import Link from "next/link"
 import { Button } from "./button"
 import { XPDisplay } from "./XPDisplay"
 import { OrganizationSelector } from "./OrganizationSelector"
+import { ProjectSelector } from "./ProjectSelector"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,8 +38,9 @@ import {
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import Pomodoro from "@/components/Pomodoro"
+import { useState } from "react"
 
-const navigationItems = [
+const globalNavigationItems = [
   {
     title: "Home",
     href: "/",
@@ -47,14 +52,37 @@ const navigationItems = [
     icon: CreditCard,
   },
   {
-    title: "Statistiques",
-    href: "/stats",
-    icon: ChartNoAxesCombined,
+    title: "Projet",
+    href: "/projects",
+    icon: Layout,
+  },
+  // {
+  //   title: "Statistiques",
+  //   href: "/stats",
+  //   icon: ChartNoAxesCombined,
+  // },
+]
+
+const getProjectNavigationItems = (projectId: string) => [
+  {
+    title: "Vue d'ensemble",
+    href: `/projects/${projectId}`,
+    icon: Layout,
   },
   {
-    title: "Mes projets",
-    href: "/projects",
-    icon: BarChart3,
+    title: "Tâches",
+    href: `/projects/${projectId}/tasks`,
+    icon: ListTodo,
+  },
+  {
+    title: "Documents",
+    href: `/projects/${projectId}/documents`,
+    icon: FileText,
+  },
+  {
+    title: "Flashcards",
+    href: `/projects/${projectId}/flashcards`,
+    icon: BrainCircuit,
   },
 ]
 
@@ -62,13 +90,37 @@ export function AppSidebar() {
   const { data: session } = useSession()
   const { setTheme } = useTheme()
   const pathname = usePathname()
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>("")
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("")
+
+  const projectNavigationItems = selectedProjectId 
+    ? getProjectNavigationItems(selectedProjectId)
+    : []
+
+  const handleOrganizationSelect = (orgId: string) => {
+    setSelectedOrganizationId(orgId)
+    setSelectedProjectId("") // Reset project selection when organization changes
+  }
 
   return (
     <Sidebar>
       <SidebarHeader className="space-y-2 pb-4">
         <div className="px-3 pt-2">
-          <OrganizationSelector isCollapsed={false} onOpenChange={() => {}} />
+          <OrganizationSelector 
+            isCollapsed={false} 
+            onOrganizationSelect={handleOrganizationSelect}
+          />
         </div>
+        {selectedOrganizationId && (
+          <div className="px-3 pt-2">
+            <ProjectSelector 
+              organizationId={selectedOrganizationId}
+              isCollapsed={false}
+              onOpenChange={() => {}}
+              onProjectSelect={setSelectedProjectId}
+            />
+          </div>
+        )}
         <div className="px-3">
           <XPDisplay />
         </div>
@@ -78,7 +130,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="space-y-1">
-          {navigationItems.map((item) => {
+          {globalNavigationItems.map((item) => {
             const Icon = item.icon
             return (
               <SidebarMenuItem key={item.href}>
@@ -96,6 +148,34 @@ export function AppSidebar() {
               </SidebarMenuItem>
             )
           })}
+
+          {selectedProjectId && (
+            <>
+              <div className="px-3 py-2">
+                <div className="text-xs font-semibold text-muted-foreground">
+                  PROJET
+                </div>
+              </div>
+              {projectNavigationItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.href}
+                      tooltip={item.title}
+                      className="h-10"
+                    >
+                      <Link href={item.href} className="flex items-center gap-3 px-3">
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="border-t">

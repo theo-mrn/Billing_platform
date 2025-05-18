@@ -37,29 +37,27 @@ export async function getProjects(organizationId: string) {
   return projects;
 }
 
-export async function getProject(id: string) {
-  const session = (await getServerSession(authOptions)) as Session | null;
-  if (!session?.user?.email) {
-    throw new Error("Non authentifié");
+export async function getProject(projectId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    throw new Error("Non autorisé");
   }
 
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
       organization: {
-        include: {
-          users: {
-            where: {
-              userId: session.user.id,
-            },
+        users: {
+          some: {
+            userId: session.user.id,
           },
         },
       },
     },
   });
 
-  if (!project || project.organization.users.length === 0) {
-    throw new Error("Projet non trouvé ou non autorisé");
+  if (!project) {
+    throw new Error("Projet non trouvé ou accès refusé");
   }
 
   return project;
@@ -169,37 +167,15 @@ export async function deleteProject(id: string) {
 }
 
 export async function getProjectModules(projectId: string) {
-  const session = (await getServerSession(authOptions)) as Session | null;
-  if (!session) {
-    throw new Error("Non authentifié");
-  }
-
-  // Vérifier que l'utilisateur a accès au projet
-  const project = await prisma.project.findFirst({
-    where: {
-      id: projectId,
-      organization: {
-        users: {
-          some: {
-            userId: session.user.id
-          }
-        }
-      }
-    },
-  });
-
-  if (!project) {
-    throw new Error("Projet non trouvé ou accès non autorisé");
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    throw new Error("Non autorisé");
   }
 
   const modules = await prisma.module.findMany({
     where: {
       projectId,
-      isActive: true
     },
-    orderBy: {
-      createdAt: 'desc'
-    }
   });
 
   return modules;

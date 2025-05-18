@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+"use client";
+import { useEffect, useState, useRef, useId } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Play, Pause, Pencil, Eye, EyeOff, Info, AlertTriangle, CircleCheck, Minus, Undo2 } from "lucide-react";
+import { CheckCircle, Play, Pause, Pencil, Eye, EyeOff, Info, AlertTriangle, CircleCheck, Minus, Undo2, KanbanSquare, Plus, CalendarIcon, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +12,7 @@ import { format } from 'date-fns';
 import { useKanbanTasks, KanbanTask } from "@/store/kanbanTasks";
 import { checkAndCreateRecurringTasks } from '@/lib/taskRecurrence';
 import { KanbanStatus, TaskPriority } from '@prisma/client';
+import Link from "next/link";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { DurationSelector } from "@/components/ui/DurationSelector";
 
 interface ProjectTodoSidebarProps {
   projectId: string;
@@ -59,6 +69,17 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
   );
 }
 
+// Utility functions from Kanban page
+const timeToSeconds = (hours: number, minutes: number) => {
+  return (hours * 60 * 60) + (minutes * 60);
+};
+
+// const secondsToTime = (seconds: number) => {
+//   const hours = Math.floor(seconds / 3600);
+//   const minutes = Math.floor((seconds % 3600) / 60);
+//   return { hours, minutes };
+// };
+
 export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProps) {
   const { tasks, setTasks, updateTask } = useKanbanTasks();
   const [statuses, setStatuses] = useState<KanbanStatus[]>([]);
@@ -79,6 +100,20 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [showCongrats, setShowCongrats] = useState(false);
   const [congratsTaskId, setCongratsTaskId] = useState<string | null>(null);
+
+  // Add new state for task creation
+  const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    plannedEndAt: new Date(),
+    priority: 'MEDIUM' as TaskPriority,
+    recurrenceType: 'NONE' as "NONE" | "DAILY" | "WEEKLY" | "MONTHLY",
+    durationSeconds: 0,
+    durationHours: 0,
+    durationMinutes: 0,
+  });
+  const timeInputId = useId();
 
   // Démarre le minuteur quand une tâche est active
   useEffect(() => {
@@ -241,12 +276,66 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
     }
   };
 
+  // Add handleAddTask function
+  const handleAddTask = async () => {
+    if (!newTask.title.trim()) return;
+
+    const plannedStatus = statuses.find(s => s.name.toLowerCase().includes('planned'));
+    if (!plannedStatus) return;
+
+    const totalDurationSeconds = timeToSeconds(newTask.durationHours, newTask.durationMinutes);
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/kanban/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newTask.title,
+          description: newTask.description,
+          priority: newTask.priority,
+          plannedEndAt: newTask.plannedEndAt,
+          statusId: plannedStatus.id,
+          recurrenceType: newTask.recurrenceType,
+          durationSeconds: totalDurationSeconds,
+        }),
+      });
+
+      if (response.ok) {
+        const newTaskData = await response.json();
+        setTasks([...tasks, { ...newTaskData, status: plannedStatus }]);
+        setNewTask({
+          title: '',
+          description: '',
+          plannedEndAt: new Date(),
+          priority: 'MEDIUM',
+          recurrenceType: 'NONE',
+          durationSeconds: 0,
+          durationHours: 0,
+          durationMinutes: 0,
+        });
+        setIsNewTaskDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
+  };
+
   return (
     <aside className="w-full max-w-xs p-4 bg-background rounded-xl flex flex-col gap-4 border border-border shadow-sm">
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-lg text-foreground">Aujourd&apos;hui</span>
-          <span className="text-xs text-muted-foreground">{doneCount}/{totalEst} DONE</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{doneCount}/{totalEst} DONE</span>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={`/projects/${projectId}/kanban`} className="flex items-center gap-1 text-xs">
+                <KanbanSquare className="h-4 w-4" />
+                Vue Kanban
+              </Link>
+            </Button>
+          </div>
         </div>
         <div className="w-full h-2 bg-muted rounded-full mb-4">
           <div
@@ -254,6 +343,13 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
             style={{ width: `${(doneCount / (totalEst || 1)) * 100}%` }}
           />
         </div>
+        <Button 
+          className="w-full mb-2 gap-2" 
+          onClick={() => setIsNewTaskDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+          Nouvelle tâche
+        </Button>
       </div>
       {/* Bloc Tâches en cours */}
       <Card className="bg-card border-none shadow-none">
@@ -431,16 +527,13 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
         <CardContent className="flex flex-col gap-2">
           {doneTasks.length === 0 && <span className="text-muted-foreground text-sm">Aucune tâche terminée.</span>}
           {doneTasks.map((task) => (
-            <div key={task.id} className="group relative flex items-center justify-between gap-2 p-3 rounded-lg bg-muted text-muted-foreground line-through border border-border min-h-[56px]">
-              {/* Nom et infos de la tâche, masqués au hover */}
-              <div className="flex-1 transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none">
-                <span className="font-medium text-sm text-foreground">{task.title}</span>
-              </div>
-              <div className="flex flex-col items-end gap-2 group-hover:opacity-0 group-hover:pointer-events-none transition-all duration-200">
-                <PriorityBadge priority={task.priority} />
+            <div key={task.id} className="group relative flex items-center gap-3 p-3 rounded-md bg-muted/30 text-muted-foreground border border-border/50 min-h-[44px]">
+              <CheckCircle className="w-4 h-4 text-primary/50 flex-shrink-0" />
+              <div className="flex-1 truncate font-medium text-sm transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none line-through decoration-primary/50">
+                {task.title}
               </div>
               {/* Actions au hover, centrées */}
-              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10">
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10">
                 <button
                   title="Restaurer la tâche"
                   onClick={async () => {
@@ -454,9 +547,10 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     setTasks(tasks.map(t => t.id === task.id ? { ...t, status: plannedStatus } : t));
                     updateTask({ ...task, status: plannedStatus });
                   }}
-                  className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-2 shadow"
+                  className="flex items-center gap-2 bg-muted-foreground/10 hover:bg-primary/80 text-primary hover:text-white rounded-full px-3 py-1 transition text-sm font-semibold"
                 >
-                  <Undo2 size={20} />
+                  <span>Restaurer</span>
+                  <Undo2 size={16} />
                 </button>
               </div>
             </div>
@@ -620,6 +714,146 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Add New Task Dialog */}
+      <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Nouvelle tâche</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre</Label>
+              <Input
+                id="title"
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                placeholder="Titre de la tâche"
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                className="min-h-[150px]"
+                placeholder="Description de la tâche"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Date d&apos;échéance</Label>
+              <Popover modal={true}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !newTask.plannedEndAt && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {newTask.plannedEndAt ? format(newTask.plannedEndAt, "PPP") : <span>Choisir une date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-auto p-0"
+                  align="start"
+                  side="bottom"
+                >
+                  <div className="rounded-lg">
+                    <Calendar
+                      mode="single"
+                      selected={newTask.plannedEndAt}
+                      onSelect={(date) => date && setNewTask({ ...newTask, plannedEndAt: date })}
+                      className="p-2"
+                      initialFocus
+                      fromDate={new Date()}
+                    />
+                    <div className="border-t border-border p-3">
+                      <div className="flex items-center gap-3">
+                        <Label htmlFor={timeInputId} className="text-xs">
+                          Heure
+                        </Label>
+                        <div className="relative grow">
+                          <input
+                            type="time"
+                            id={timeInputId}
+                            value={format(newTask.plannedEndAt, "HH:mm")}
+                            onChange={(e) => {
+                              const [hours, minutes] = e.target.value.split(':').map(Number);
+                              const newDate = new Date(newTask.plannedEndAt);
+                              newDate.setHours(hours, minutes);
+                              setNewTask({ ...newTask, plannedEndAt: newDate });
+                            }}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ps-9"
+                          />
+                          <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80">
+                            <Clock size={16} strokeWidth={2} aria-hidden="true" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label>Priorité</Label>
+              <div className="flex gap-2">
+                {(['HIGH', 'MEDIUM', 'LOW'] as const).map((priority) => (
+                  <Button
+                    key={priority}
+                    variant={newTask.priority === priority ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setNewTask({ ...newTask, priority })}
+                  >
+                    {priority === 'HIGH' ? 'Haute' : priority === 'MEDIUM' ? 'Moyenne' : 'Basse'}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Récurrence</Label>
+              <Select
+                value={newTask.recurrenceType}
+                onValueChange={(value: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY") => 
+                  setNewTask({ ...newTask, recurrenceType: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner la récurrence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Aucune</SelectItem>
+                  <SelectItem value="DAILY">Quotidienne</SelectItem>
+                  <SelectItem value="WEEKLY">Hebdomadaire</SelectItem>
+                  <SelectItem value="MONTHLY">Mensuelle</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Durée estimée</Label>
+              <DurationSelector
+                hours={newTask.durationHours}
+                minutes={newTask.durationMinutes}
+                onDurationChange={(hours, minutes) => {
+                  setNewTask({
+                    ...newTask,
+                    durationHours: hours,
+                    durationMinutes: minutes,
+                    durationSeconds: timeToSeconds(hours, minutes)
+                  });
+                }}
+              />
+            </div>
+            <Button onClick={handleAddTask} className="w-full">
+              Ajouter la tâche
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </aside>

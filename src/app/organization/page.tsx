@@ -2,16 +2,16 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, Users, Calendar, Mail, Plus, X, Clock, ChevronDown, Copy } from "lucide-react";
+import { Users, Calendar, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { updateMemberRole, updateOrganization } from "@/app/actions/organizations";
+import { getOrganization, getOrganizations, updateMemberRole, updateOrganization, createOrganization } from "@/app/actions/organizations";
 import {
   Dialog,
   DialogContent,
@@ -20,12 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { toast } from "sonner";
 import { hasPermission, getAssignableRoles, ROLE_DESCRIPTIONS, type OrganizationRole, canManageRole } from "@/lib/permissions";
 import {
@@ -36,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InvitationLinks } from "@/components/organization/InvitationLinks";
+import { OrganizationSelector } from "@/components/ui/OrganizationSelector";
 
 interface Organization {
   id: string;
@@ -43,6 +39,10 @@ interface Organization {
   description: string | null;
   createdAt: Date;
   updatedAt: Date;
+  role: OrganizationRole;
+}
+
+interface OrganizationDetails extends Omit<Organization, 'role'> {
   users: {
     user: {
       id: string;
@@ -59,6 +59,7 @@ interface Organization {
     role: string;
     inviteUrl?: string;
   }[];
+  role: OrganizationRole;
 }
 
 interface Invitation {
@@ -89,13 +90,20 @@ interface CustomSession {
 export default function OrganizationPage() {
   const { data: session, status } = useSession() as { data: CustomSession | null, status: string };
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrgDetails, setSelectedOrgDetails] = useState<OrganizationDetails | null>(null);
   const [selectedOrgIndex, setSelectedOrgIndex] = useState(0);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editForm, setEditForm] = useState({
+    name: "",
+    description: "",
+  });
+  const [createForm, setCreateForm] = useState({
     name: "",
     description: "",
   });
@@ -104,22 +112,17 @@ export default function OrganizationPage() {
     const fetchData = async () => {
       if (session?.user?.email) {
         try {
-          const orgResponse = await fetch(`/api/organizations/user`);
-          if (orgResponse.ok) {
-            const orgsData = await orgResponse.json();
-            setOrganizations(orgsData);
+          const orgs = await getOrganizations();
+          setOrganizations(orgs);
 
-            // Seulement après avoir l'organisation sélectionnée, on récupère les invitations
-            if (orgsData[selectedOrgIndex]?.id) {
-              const invitationsResponse = await fetch(`/api/organizations/${orgsData[selectedOrgIndex].id}/invitations`);
-              if (invitationsResponse.ok) {
-                const invitationsData = await invitationsResponse.json();
-                setInvitations(invitationsData);
-              }
-            }
+          // Récupérer les détails de l'organisation sélectionnée
+          if (orgs[selectedOrgIndex]?.id) {
+            const orgDetails = await getOrganization(orgs[selectedOrgIndex].id);
+            setSelectedOrgDetails(orgDetails);
           }
         } catch (error) {
           console.error("Error fetching data:", error);
+          toast.error("Erreur lors de la récupération des données");
         } finally {
           setIsLoading(false);
         }
@@ -130,35 +133,36 @@ export default function OrganizationPage() {
   }, [session, selectedOrgIndex]);
 
   const handleEdit = () => {
-    if (organizations[selectedOrgIndex]) {
+    if (selectedOrgDetails) {
       setEditForm({
-        name: organizations[selectedOrgIndex].name,
-        description: organizations[selectedOrgIndex].description || "",
+        name: selectedOrgDetails.name,
+        description: selectedOrgDetails.description || "",
       });
       setIsEditing(true);
     }
   };
 
   const handleSave = async () => {
-    if (organizations[selectedOrgIndex]) {
+    if (selectedOrgDetails) {
       try {
-        const updatedOrg = await updateOrganization(organizations[selectedOrgIndex].id, editForm);
-        const updatedOrgs = [...organizations];
-        updatedOrgs[selectedOrgIndex] = updatedOrg;
-        setOrganizations(updatedOrgs);
+        const updatedOrg = await updateOrganization(selectedOrgDetails.id, editForm);
+        setSelectedOrgDetails({
+          ...updatedOrg,
+          role: selectedOrgDetails.role,
+        });
         setIsEditing(false);
         toast.success("Organisation mise à jour avec succès");
       } catch (error) {
         console.error("Error updating organization:", error);
-        toast.error((error as Error).message || "Erreur lors de la mise à jour");
+        toast.error("Erreur lors de la mise à jour de l'organisation");
       }
     }
   };
 
   const handleInvite = async () => {
-    if (organizations[selectedOrgIndex] && inviteEmail) {
+    if (selectedOrgDetails && inviteEmail) {
       try {
-        const response = await fetch(`/api/organizations/${organizations[selectedOrgIndex].id}/invitations`, {
+        const response = await fetch(`/api/organizations/${selectedOrgDetails.id}/invitations`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -167,8 +171,8 @@ export default function OrganizationPage() {
         });
 
         if (response.ok) {
-          const newInvitation = await response.json();
-          setInvitations([...invitations, newInvitation]);
+          const invitation = await response.json();
+          setInvitations([...invitations, invitation]);
           setInviteEmail("");
           setIsInviteDialogOpen(false);
           toast.success("Invitation envoyée avec succès");
@@ -183,12 +187,21 @@ export default function OrganizationPage() {
     }
   };
 
-  const copyToClipboard = async (text: string) => {
+
+
+  const handleCreateOrganization = async () => {
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Lien copié dans le presse-papier");
-    } catch {
-      toast.error("Erreur lors de la copie du lien");
+      const newOrg = await createOrganization(createForm);
+      const orgs = await getOrganizations();
+      setOrganizations(orgs);
+      setSelectedOrgIndex(orgs.findIndex(org => org.id === newOrg.id));
+      setCreateForm({ name: "", description: "" });
+      setIsCreateDialogOpen(false);
+      setRefreshTrigger(prev => prev + 1);
+      toast.success("Organisation créée avec succès");
+    } catch (error) {
+      console.error("Error creating organization:", error);
+      toast.error("Erreur lors de la création de l&apos;organisation");
     }
   };
 
@@ -220,127 +233,164 @@ export default function OrganizationPage() {
     );
   }
 
-  const selectedOrg = organizations[selectedOrgIndex];
-  if (!selectedOrg) {
-    return (
-      <div className="container mx-auto p-6">
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Organisations</h1>
+        <div className="flex items-center gap-4">
+          {organizations.length > 0 && <OrganizationSelector refreshTrigger={refreshTrigger} />}
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle organisation
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Créer une nouvelle organisation</DialogTitle>
+                <DialogDescription>
+                  Créez une nouvelle organisation pour collaborer avec votre équipe.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="create-name">Nom de l&apos;organisation</Label>
+                  <Input
+                    id="create-name"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    placeholder="Mon organisation"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-description">Description</Label>
+                  <Input
+                    id="create-description"
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                    placeholder="Description de l&apos;organisation"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={handleCreateOrganization}
+                    disabled={!createForm.name}
+                  >
+                    Créer
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {organizations.length === 0 ? (
         <Card>
           <CardContent className="p-6">
             <p className="text-center text-muted-foreground">
-              Aucune organisation trouvée.
+              Créez votre première organisation en cliquant sur le bouton &apos;Nouvelle organisation&apos; ci-dessus.
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  const isOwner = selectedOrg.users.some(
-    (userOrg) =>
-      userOrg.user.email === session?.user?.email && userOrg.role === "OWNER"
-  );
-
-  return (
-    <div className="container mx-auto p-6">
-      <Card>
-        <CardContent className="p-6">
-          {organizations.length > 0 ? (
+      ) : !selectedOrgDetails ? (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center text-muted-foreground">
+              Sélectionnez une organisation.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-6">
             <div className="space-y-6">
-              <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full md:w-auto justify-between">
-                        <Building2 className="h-4 w-4 mr-2" />
-                        {selectedOrg.name}
-                        <ChevronDown className="h-4 w-4 ml-2" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {organizations.map((org, index) => (
-                        <DropdownMenuItem
-                          key={org.id}
-                          onClick={() => setSelectedOrgIndex(index)}
-                        >
-                          {org.name}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              {/* Description de l'organisation */}
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nom de l&apos;organisation</Label>
+                    <Input
+                      id="name"
+                      value={editForm.name}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Input
+                      id="description"
+                      value={editForm.description}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, description: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Annuler
+                    </Button>
+                    <Button onClick={handleSave}>Enregistrer</Button>
+                  </div>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  {isEditing ? (
-                    <div className="space-y-4 w-full">
-                      <div>
-                        <Label htmlFor="name">Nom</Label>
-                        <Input
-                          id="name"
-                          value={editForm.name}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, name: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="description">Description</Label>
-                        <Input
-                          id="description"
-                          value={editForm.description}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              description: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={handleSave}>Enregistrer</Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setIsEditing(false)}
-                        >
-                          Annuler
-                        </Button>
-                      </div>
+              ) : (
+                <div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xl font-semibold">{selectedOrgDetails.name}</h2>
+                      <p className="text-muted-foreground mt-1">
+                        {selectedOrgDetails.description || "Aucune description"}
+                      </p>
                     </div>
-                  ) : (
-                    <>
-                      <div>
-                        <p className="text-muted-foreground">
-                          {selectedOrg.description || "Aucune description"}
-                        </p>
-                      </div>
-                      {isOwner && (
-                        <Button onClick={handleEdit} variant="outline">
-                          Modifier
-                        </Button>
-                      )}
-                    </>
-                  )}
+                    {selectedOrgDetails.users.some(
+                      (userOrg) =>
+                        userOrg.user.email === session?.user?.email && userOrg.role === "OWNER"
+                    ) && (
+                      <Button onClick={handleEdit} variant="outline">
+                        Modifier
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Créée le{" "}
-                    {format(new Date(selectedOrg.createdAt), "d MMMM yyyy", {
-                      locale: fr,
-                    })}
-                  </p>
+              )}
+
+              {/* Informations supplémentaires */}
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  Créée le{" "}
+                  {format(new Date(selectedOrgDetails.createdAt), "d MMMM yyyy", {
+                    locale: fr,
+                  })}
                 </div>
               </div>
 
-              <div className="border-t pt-6">
-                <div className="flex justify-between items-center mb-4">
+              {/* Section des membres */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Membres ({selectedOrg.users.length})
+                    Membres ({selectedOrgDetails.users.length})
                   </h3>
-                  {isOwner && (
+                  {selectedOrgDetails.users.some(
+                    (userOrg) =>
+                      userOrg.user.email === session?.user?.email && userOrg.role === "OWNER"
+                  ) && (
                     <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button>
                           <Plus className="h-4 w-4 mr-2" />
                           Inviter
                         </Button>
@@ -349,28 +399,29 @@ export default function OrganizationPage() {
                         <DialogHeader>
                           <DialogTitle>Inviter un membre</DialogTitle>
                           <DialogDescription>
-                            Envoyez une invitation par email pour rejoindre l&apos;organisation.
+                            Envoyez une invitation par email à un nouveau membre.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="email">Adresse email</Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              placeholder="colleague@example.com"
-                              value={inviteEmail}
-                              onChange={(e) => setInviteEmail(e.target.value)}
-                            />
+                          <div className="flex items-center gap-2">
+                            <div className="grid flex-1 gap-2">
+                              <Label htmlFor="email">Email</Label>
+                              <Input
+                                id="email"
+                                type="email"
+                                placeholder="membre@example.com"
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                              />
+                            </div>
+                            <Button
+                              className="mt-8"
+                              onClick={handleInvite}
+                              disabled={!inviteEmail}
+                            >
+                              Inviter
+                            </Button>
                           </div>
-                          <Button
-                            onClick={handleInvite}
-                            disabled={!inviteEmail}
-                            className="w-full"
-                          >
-                            <Mail className="h-4 w-4 mr-2" />
-                            Envoyer l&apos;invitation
-                          </Button>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -380,7 +431,7 @@ export default function OrganizationPage() {
                 <div className="space-y-4">
                   {/* Liste des membres */}
                   <div className="grid gap-4">
-                    {selectedOrg.users.map((userOrg) => (
+                    {selectedOrgDetails.users.map((userOrg) => (
                       <div
                         key={userOrg.user.id}
                         className="flex items-center justify-between p-4 rounded-lg border"
@@ -414,18 +465,16 @@ export default function OrganizationPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           {userOrg.user.id !== session?.user?.id && 
-                            hasPermission(selectedOrg.users.find(u => u.user.id === session?.user?.id)?.role as OrganizationRole || 'MEMBER', 'canManageRoles') && 
-                            canManageRole(selectedOrg.users.find(u => u.user.id === session?.user?.id)?.role as OrganizationRole || 'MEMBER', userOrg.role as OrganizationRole) && (
+                            hasPermission(selectedOrgDetails.role, 'canManageRoles') && 
+                            canManageRole(selectedOrgDetails.role, userOrg.role) && (
                             <Select
                               defaultValue={userOrg.role}
                               onValueChange={async (newRole: OrganizationRole) => {
                                 try {
-                                  await updateMemberRole(selectedOrg.id, userOrg.user.id, newRole);
-                                  const updatedOrgs = [...organizations];
-                                  const orgIndex = organizations.findIndex(org => org.id === selectedOrg.id);
-                                  const userIndex = updatedOrgs[orgIndex].users.findIndex(u => u.user.id === userOrg.user.id);
-                                  updatedOrgs[orgIndex].users[userIndex].role = newRole;
-                                  setOrganizations(updatedOrgs);
+                                  await updateMemberRole(selectedOrgDetails.id, userOrg.user.id, newRole);
+                                  const userIndex = selectedOrgDetails.users.findIndex(u => u.user.id === userOrg.user.id);
+                                  selectedOrgDetails.users[userIndex].role = newRole;
+                                  setSelectedOrgDetails({ ...selectedOrgDetails });
                                   toast.success("Rôle mis à jour avec succès");
                                 } catch (error) {
                                   console.error("Error updating role:", error);
@@ -437,7 +486,7 @@ export default function OrganizationPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {getAssignableRoles(selectedOrg.users.find(u => u.user.id === session?.user?.id)?.role || 'MEMBER').map((role) => (
+                                {getAssignableRoles(selectedOrgDetails.role).map((role) => (
                                   <SelectItem key={role} value={role}>
                                     {role}
                                   </SelectItem>
@@ -445,186 +494,27 @@ export default function OrganizationPage() {
                               </SelectContent>
                             </Select>
                           )}
-                          <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full">
-                            {userOrg.role}
-                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Liste des invitations en attente */}
-                  {invitations.length > 0 && (
-                    <div className="mt-6">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Invitations en attente
-                      </h4>
-                      <div className="grid gap-2">
-                        {invitations.map((invitation) => (
-                          <div
-                            key={invitation.id}
-                            className="flex items-center justify-between p-3 rounded-lg border border-dashed"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {invitation.email || "Invitation par lien"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Invité par {invitation.invitedBy?.name || invitation.invitedBy?.email || "Utilisateur inconnu"}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                Expire le{" "}
-                                {format(new Date(invitation.expiresAt), "d MMM", {
-                                  locale: fr,
-                                })}
-                              </span>
-                              {isOwner && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    // TODO: Ajouter la logique pour annuler l'invitation
-                                  }}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Section des invitations par lien */}
+                  <InvitationLinks 
+                    organizationId={selectedOrgDetails.id}
+                    onInvitationCreated={(invitation) => {
+                      setSelectedOrgDetails({
+                        ...selectedOrgDetails,
+                        invitations: [...selectedOrgDetails.invitations, invitation],
+                      });
+                    }}
+                  />
                 </div>
               </div>
-
-              {isOwner && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Section des invitations par email */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                          <Mail className="h-5 w-5" />
-                          Inviter par email
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button>
-                                <Mail className="h-4 w-4 mr-2" />
-                                Inviter par email
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Inviter un membre</DialogTitle>
-                                <DialogDescription>
-                                  Envoyez une invitation par email pour rejoindre votre organisation.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4 mt-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="email">Email</Label>
-                                  <Input
-                                    id="email"
-                                    type="email"
-                                    value={inviteEmail}
-                                    onChange={(e) => setInviteEmail(e.target.value)}
-                                    placeholder="email@exemple.com"
-                                  />
-                                </div>
-                                <Button onClick={handleInvite} className="w-full">
-                                  Envoyer l&apos;invitation
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Section des invitations par lien */}
-                    <InvitationLinks 
-                      organizationId={selectedOrg.id}
-                      onInvitationCreated={(invitation) => {
-                        setInvitations([...invitations, invitation]);
-                      }}
-                    />
-                  </div>
-
-                  {/* Liste des invitations en attente */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Invitations en attente
-                    </h3>
-                    <div className="space-y-4">
-                      {invitations.length > 0 ? (
-                        invitations.map((invitation) => (
-                          <Card key={invitation.id}>
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <Avatar>
-                                    <AvatarFallback>
-                                      {invitation.email ? invitation.email[0].toUpperCase() : "?"}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <p className="font-medium">{invitation.email || "Invitation par lien"}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      Invité par {invitation.invitedBy?.name || invitation.invitedBy?.email || "Utilisateur inconnu"}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                      Expire le {format(new Date(invitation.expiresAt), "dd MMMM yyyy", { locale: fr })}
-                                    </p>
-                                  </div>
-                                </div>
-                                {invitation.email ? (
-                                  <Button variant="ghost" size="icon">
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL}/invitation/${invitation.token}`)}
-                                  >
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Copier le lien
-                                  </Button>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                      ) : (
-                        <p className="text-center text-muted-foreground">
-                          Aucune invitation en attente
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-          ) : (
-            <p className="text-center text-muted-foreground">
-              Aucune organisation trouvée.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 } 

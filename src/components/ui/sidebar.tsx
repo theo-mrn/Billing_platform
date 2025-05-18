@@ -81,10 +81,9 @@ interface SidebarContentProps {
   setTheme: (theme: Theme) => void;
   session: Session | null;
   pathname: string;
-  onSelectOpen: (isOpen: boolean) => void;
 }
 
-function SidebarContent({ isCollapsed, setTheme, session, pathname, onSelectOpen }: SidebarContentProps) {
+function SidebarContent({ isCollapsed, setTheme, session, pathname }: SidebarContentProps) {
   return (
     <motion.div
       className="relative z-40 flex h-full shrink-0 flex-col"
@@ -94,7 +93,7 @@ function SidebarContent({ isCollapsed, setTheme, session, pathname, onSelectOpen
         <div className="flex grow flex-col items-center">
           <div className="flex h-[54px] w-full shrink-0 items-center justify-between border-b border-border px-4">
             {!isCollapsed && (
-              <OrganizationSelector isCollapsed={isCollapsed} onOpenChange={onSelectOpen} />
+              <OrganizationSelector isCollapsed={isCollapsed} />
             )}
           </div>
           {!isCollapsed && (
@@ -304,7 +303,6 @@ function MobileTabBar({ pathname, session }: { pathname: string; session: Sessio
 
 export function SessionNavBar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
   const { setTheme } = useTheme();
@@ -317,18 +315,8 @@ export function SessionNavBar() {
     setIsCollapsed(false);
   };
 
-  const handleSelectOpenChange = (open: boolean) => {
-    setIsSelectOpen(open);
-    if (open) {
-      setIsCollapsed(false);
-    }
-  };
-
   const handleMouseLeave = () => {
-    // Ne replie la sidebar que si le select n'est pas ouvert
-    if (!isSelectOpen) {
-      setIsCollapsed(true);
-    }
+    setIsCollapsed(true);
   };
 
   return (
@@ -337,8 +325,7 @@ export function SessionNavBar() {
       <div
         className={cn(
           sidebarBase, 
-          sidebarDesktop,
-          isSelectOpen ? "w-[15rem]" : ""
+          sidebarDesktop
         )}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -348,7 +335,6 @@ export function SessionNavBar() {
           setTheme={setTheme}
           session={session}
           pathname={pathname}
-          onSelectOpen={handleSelectOpenChange}
         />
       </div>
 

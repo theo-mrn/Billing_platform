@@ -93,6 +93,7 @@ model User {
   incomes         Income[]
   subscriptions   Subscription[]
   pomodoroSessions PomodoroSession[]
+  flashcardProgress FlashcardProgress[]
 }
 
 model Income {
@@ -128,6 +129,10 @@ model Project {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   modules        Module[]
   kanbanBoards   KanbanBoard[]
+  textContents   RichTextContent[]
+  textFolders    TextFolder[]
+  flashcards     Flashcard[]
+  decks          Deck[]
 
   @@index([organizationId])
 }
@@ -280,4 +285,82 @@ model TaskCompletion {
   updatedAt DateTime   @updatedAt
 
   @@index([taskId])
+}
+
+model RichTextContent {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  projectId   String
+  folderId    String?
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folder      TextFolder? @relation(fields: [folderId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([folderId])
+}
+
+model TextFolder {
+  id          String   @id @default(cuid())
+  name        String
+  projectId   String
+  parentId    String?
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent      TextFolder? @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    TextFolder[] @relation("FolderHierarchy")
+  documents   RichTextContent[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([parentId])
+}
+
+model Deck {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  flashcards  Flashcard[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
+}
+
+model Flashcard {
+  id          String             @id @default(cuid())
+  question    String
+  answer      String
+  projectId   String
+  deckId      String
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  deck        Deck               @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  progress    FlashcardProgress[]
+
+  @@index([projectId])
+  @@index([deckId])
+}
+
+model FlashcardProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  flashcardId String
+  lastReviewed DateTime
+  nextReview  DateTime
+  easeFactor  Float     @default(2.5)
+  interval    Int       @default(1)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, flashcardId])
+  @@index([userId])
+  @@index([flashcardId])
 }

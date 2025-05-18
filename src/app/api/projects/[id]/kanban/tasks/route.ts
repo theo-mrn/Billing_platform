@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,6 +13,8 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const params = await context.params;
+    const projectId = params.id;
     const { searchParams } = new URL(request.url);
     const recurrent = searchParams.get('recurrent') === 'true';
 
@@ -21,7 +23,7 @@ export async function GET(
       const tasks = await prisma.kanbanTask.findMany({
         where: {
           board: {
-            projectId: params.id,
+            projectId,
           },
           recurrenceType: {
             not: 'NONE',
@@ -40,7 +42,7 @@ export async function GET(
     const tasks = await prisma.kanbanTask.findMany({
       where: {
         board: {
-          projectId: params.id,
+          projectId,
         },
       },
       include: {
@@ -59,7 +61,7 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -67,12 +69,14 @@ export async function POST(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const params = await context.params;
+    const projectId = params.id;
     const body = await request.json();
 
     // Trouver le board par défaut du projet
     const board = await prisma.kanbanBoard.findFirst({
       where: {
-        projectId: params.id,
+        projectId,
       },
     });
 

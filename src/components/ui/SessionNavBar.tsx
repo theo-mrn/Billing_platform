@@ -63,7 +63,7 @@ export function SessionNavBar() {
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center justify-between px-4">
-            <OrganizationSelector isCollapsed={false} onOpenChange={() => {}} />
+            <OrganizationSelector isCollapsed={false} />
             <SidebarTrigger />
           </div>
           <div className="px-2 py-2">

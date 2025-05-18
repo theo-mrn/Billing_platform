@@ -142,9 +142,9 @@ export default function AccountPage() {
   // Bouton retour dashboard
   const DashboardButton = () => (
     <Link href="/projects" className="absolute left-6 top-6 z-20">
-      <button className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground transition-colors shadow">
+      <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all duration-200 shadow-lg hover:shadow-xl border border-gray-200 dark:border-gray-700">
         <Home className="h-5 w-5" />
-        <span className="font-medium">Dashboard</span>
+        <span className="font-semibold">Dashboard</span>
       </button>
     </Link>
   );

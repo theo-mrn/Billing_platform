@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,6 +13,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const params = await context.params;
+    const projectId = params.id;
     const { searchParams } = new URL(req.url);
     const days = parseInt(searchParams.get('days') || '7');
 
@@ -23,7 +25,7 @@ export async function GET(
       where: {
         board: {
           project: {
-            id: params.id,
+            id: projectId,
           },
         },
         actualEndAt: {

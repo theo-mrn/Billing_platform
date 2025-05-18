@@ -96,12 +96,22 @@ export async function createOrganization(data: {
     throw new Error("Non authentifié");
   }
 
+  // Vérifier que l'utilisateur existe
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  if (!user) {
+    throw new Error("Utilisateur non trouvé");
+  }
+
   const organization = await prisma.organization.create({
     data: {
-      ...data,
+      name: data.name,
+      description: data.description,
       users: {
         create: {
-          userId: session.user.id,
+          userId: user.id,
           role: "OWNER" as OrganizationRole,
         },
       },

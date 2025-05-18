@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Pause, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
+import { createPomodoroSession } from "@/app/_actions/pomodoro";
+import { toast } from "sonner";
 
 export default function Pomodoro() {
   const { data: session } = useSession();
@@ -17,6 +19,25 @@ export default function Pomodoro() {
   const [breakDuration, setBreakDuration] = useState(1);
   const [isBreakReady, setIsBreakReady] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+
+  const handleSessionEnd = useCallback(async () => {
+    if (!session?.user?.email || !sessionStartTime) return;
+
+    const endTime = new Date();
+    const duration = Math.floor((endTime.getTime() - sessionStartTime.getTime()) / 1000);
+
+    try {
+      await createPomodoroSession({
+        startTime: sessionStartTime,
+        endTime,
+        duration,
+        type: isWorkTime ? 'WORK' : 'BREAK',
+      });
+    } catch (error) {
+      console.error('Failed to save pomodoro session:', error);
+      toast.error('Failed to save session');
+    }
+  }, [session?.user?.email, sessionStartTime, isWorkTime]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -37,7 +58,7 @@ export default function Pomodoro() {
     }
 
     return () => clearInterval(interval);
-  }, [isActive, time, isWorkTime, workDuration]);
+  }, [isActive, time, isWorkTime, workDuration, handleSessionEnd]);
 
   const toggleTimer = () => {
     if (!isActive) {
@@ -46,30 +67,6 @@ export default function Pomodoro() {
       handleSessionEnd();
     }
     setIsActive(!isActive);
-  };
-
-  const handleSessionEnd = async () => {
-    if (!session?.user?.email || !sessionStartTime) return;
-
-    const endTime = new Date();
-    const duration = Math.floor((endTime.getTime() - sessionStartTime.getTime()) / 1000);
-
-    try {
-      await fetch('/api/pomodoro/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          startTime: sessionStartTime,
-          endTime,
-          duration,
-          type: isWorkTime ? 'WORK' : 'BREAK',
-        }),
-      });
-    } catch (error) {
-      console.error('Failed to save pomodoro session:', error);
-    }
   };
 
   const startBreak = () => {

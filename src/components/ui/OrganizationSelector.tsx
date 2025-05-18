@@ -9,18 +9,24 @@ import {
 } from "./select";
 import { toast } from "sonner";
 import { useOrganization } from "@/contexts/OrganizationContext";
+import { getOrganizations } from "@/app/actions/organizations";
 
 interface Organization {
   id: string;
   name: string;
 }
 
-interface OrganizationSelectorProps {
-  isCollapsed: boolean;
-  onOpenChange?: (isOpen: boolean) => void;
+export type OrganizationSelectorProps = {
+  isCollapsed?: boolean
+  onOrganizationSelect?: (organizationId: string) => void
+  refreshTrigger?: number
 }
 
-export function OrganizationSelector({ isCollapsed, onOpenChange }: OrganizationSelectorProps) {
+export function OrganizationSelector({
+  isCollapsed = false,
+  onOrganizationSelect,
+  refreshTrigger = 0
+}: OrganizationSelectorProps) {
   const { data: session } = useSession();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const { selectedOrg, setSelectedOrg } = useOrganization();
@@ -28,17 +34,14 @@ export function OrganizationSelector({ isCollapsed, onOpenChange }: Organization
   useEffect(() => {
     const fetchOrganizations = async () => {
       try {
-        const response = await fetch("/api/organizations/user");
-        if (response.ok) {
-          const data = await response.json();
-          const orgs = data.map((org: { id: string; name: string }) => ({
-            id: org.id,
-            name: org.name,
-          }));
-          setOrganizations(orgs);
-          if (orgs.length > 0 && !selectedOrg) {
-            setSelectedOrg(orgs[0].id);
-          }
+        const orgs = await getOrganizations();
+        const formattedOrgs = orgs.map((org) => ({
+          id: org.id,
+          name: org.name,
+        }));
+        setOrganizations(formattedOrgs);
+        if (formattedOrgs.length > 0 && !selectedOrg) {
+          setSelectedOrg(formattedOrgs[0].id);
         }
       } catch (error) {
         console.error("Error fetching organizations:", error);
@@ -49,7 +52,12 @@ export function OrganizationSelector({ isCollapsed, onOpenChange }: Organization
     if (session?.user?.email) {
       fetchOrganizations();
     }
-  }, [session?.user?.email, selectedOrg, setSelectedOrg]);
+  }, [session?.user?.email, selectedOrg, setSelectedOrg, refreshTrigger]);
+
+  const handleOrganizationSelect = (value: string) => {
+    setSelectedOrg(value);
+    onOrganizationSelect?.(value);
+  };
 
   if (isCollapsed) {
     return null;
@@ -58,8 +66,7 @@ export function OrganizationSelector({ isCollapsed, onOpenChange }: Organization
   return (
     <Select 
       value={selectedOrg || ""} 
-      onValueChange={setSelectedOrg}
-      onOpenChange={onOpenChange}
+      onValueChange={handleOrganizationSelect}
     >
       <SelectTrigger className="w-full bg-background hover:bg-accent rounded-lg">
         <SelectValue placeholder="Sélectionner une organisation" className="text-sm font-medium" />
