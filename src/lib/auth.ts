@@ -4,10 +4,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { Resend } from "resend";
 import type { OrganizationRole } from "./permissions";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 if (!process.env.NEXTAUTH_URL) {
   console.error("NEXTAUTH_URL is not set");
@@ -172,14 +170,15 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    async signIn({ user }) {
-      console.log('User signed in:', user.email);
+    signIn({ user }) {
+      if (user.email) {
+        console.log('User signed in:', user.email);
+      }
     },
-    async signOut({ token }) {
-      console.log('User signed out:', token.sub);
-    },
-    async error(error) {
-      console.error('Auth error:', error);
+    signOut({ token }) {
+      if (token?.sub) {
+        console.log('User signed out:', token.sub);
+      }
     }
   }
 }; 
