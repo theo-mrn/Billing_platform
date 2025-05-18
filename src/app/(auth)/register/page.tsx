@@ -44,7 +44,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/projects");
+      router.push("/organization");
       router.refresh();
     } else {
       const data = await res.json();
@@ -54,7 +54,7 @@ export default function RegisterPage() {
   }
 
   const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/projects" });
+    signIn("google", { callbackUrl: "/organization" });
   };
 
   return (
