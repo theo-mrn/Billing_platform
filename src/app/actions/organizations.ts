@@ -19,7 +19,15 @@ export async function getOrganizations() {
     include: {
       organizations: {
         include: {
-          organization: true,
+          organization: {
+            include: {
+              projects: {
+                where: {
+                  isDefault: true
+                }
+              }
+            }
+          },
         },
       },
     },
@@ -32,6 +40,7 @@ export async function getOrganizations() {
   return user.organizations.map((org) => ({
     ...org.organization,
     role: org.role,
+    isDefault: org.organization.projects.length > 0
   }));
 }
 

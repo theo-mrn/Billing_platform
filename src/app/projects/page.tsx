@@ -69,23 +69,20 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     const fetchOrganizations = async () => {
-      console.log("Fetching organizations. Session state:", {
-        status,
-        userEmail: session?.user?.email,
-        userId: session?.user?.id
-      });
-      
+      if (!session?.user?.email) return;
+
       try {
         const response = await fetch("/api/organizations/user");
-        console.log("Organizations API response status:", response.status);
-        
         if (response.ok) {
           const data = await response.json();
-          console.log("Organizations fetched:", data.length);
-          setOrganizations(data.map((org: { id: string; name: string }) => ({ id: org.id, name: org.name })));
+          setOrganizations(data);
+          
+          // Si aucune organisation n'est sélectionnée, sélectionner la première
+          if (!selectedOrg && data.length > 0) {
+            setSelectedOrg(data[0].id);
+          }
         } else {
           const errorData = await response.json();
-          console.error("Error response from organizations API:", errorData);
           setError(errorData.error || "Erreur lors de la récupération des organisations");
         }
       } catch (error) {
@@ -94,10 +91,8 @@ export default function ProjectsPage() {
       }
     };
 
-    if (session?.user?.email) {
-      fetchOrganizations();
-    }
-  }, [session, status]);
+    fetchOrganizations();
+  }, [session, selectedOrg, setSelectedOrg]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -209,6 +204,42 @@ export default function ProjectsPage() {
     setEditingProject(null);
   };
 
+  if (!selectedOrg && organizations.length > 0) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sélectionnez une organisation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Veuillez sélectionner une organisation pour voir ses projets.
+            </p>
+            <Select
+              value={selectedOrg || ""}
+              onValueChange={(value) => {
+                if (value) {
+                  setSelectedOrg(value);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sélectionner une organisation" />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (status === "loading" || isLoading || isOrgLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -262,25 +293,6 @@ export default function ProjectsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <Select
-            value={selectedOrg || ""}
-            onValueChange={(value) => {
-              if (value) {
-                setSelectedOrg(value);
-              }
-            }}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Sélectionner une organisation" />
-            </SelectTrigger>
-            <SelectContent>
-              {organizations.map((org) => (
-                <SelectItem key={org.id} value={org.id}>
-                  {org.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
