@@ -180,7 +180,7 @@ export async function DELETE(
       );
     }
 
-    // Verify the task belongs to a board in this project
+    // Verify the task exists and belongs to this project
     const task = await prisma.kanbanTask.findFirst({
       where: {
         id: taskId,
@@ -204,7 +204,8 @@ export async function DELETE(
       },
     });
 
-    return NextResponse.json(null, { status: 204 });
+    // Pour un DELETE réussi, on retourne juste un NextResponse avec status 204
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error("[TASK_DELETE]", error);
     return NextResponse.json(

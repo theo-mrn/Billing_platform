@@ -45,7 +45,7 @@ export function Hero({ handleScroll, refs }: HeroProps) {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="text-4xl md:text-6xl font-bold tracking-tight"
               >
-                Gérez vos <span className="text-primary">Abonnements</span>
+                Votre <span className="text-primary">Suite Productive</span>
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -53,7 +53,7 @@ export function Hero({ handleScroll, refs }: HeroProps) {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="text-xl text-muted-foreground"
               >
-                Simplifiez la gestion de vos abonnements et gardez le contrôle de vos dépenses
+                Boostez votre productivité avec nos outils : éditeur de texte, flashcards, kanban et pomodoro
               </motion.p>
             </div>
             <motion.div
@@ -65,7 +65,7 @@ export function Hero({ handleScroll, refs }: HeroProps) {
               {session ? (
                 <Link href="/projects">
                   <HoverBorderGradient className="px-6">
-                    Accéder à mon espace
+                    Accéder à mes outils
                   </HoverBorderGradient>
                 </Link>
               ) : (
@@ -87,8 +87,8 @@ export function Hero({ handleScroll, refs }: HeroProps) {
             className="relative max-w-2xl mx-auto overflow-hidden rounded-2xl"
           >
             <Image
-              src="/images/projects.jpg"
-              alt="Portrait"
+              src="/images/mockup.jpg"
+              alt="Productivity Tools"
               className="object-contain w-full h-full filter brightness-100"
               width={1600}
               height={600}

@@ -102,9 +102,9 @@ export function OrganizationSelector({
           <SelectItem 
             key={org.id} 
             value={org.id} 
-            className={`text-sm ${org.isDefault ? 'font-semibold' : ''}`}
+            className={`text-sm ${org.isDefault ? 'font-medium text-primary' : ''}`}
           >
-            {org.name} {org.isDefault && '(Par défaut)'}
+            {org.name}
           </SelectItem>
         ))}
       </SelectContent>

@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, useId } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Play, Pause, Pencil, Eye, EyeOff, Info, AlertTriangle, CircleCheck, Minus, Undo2, KanbanSquare, Plus, CalendarIcon, Clock } from "lucide-react";
+import { CheckCircle, Play, Pause, Pencil, Eye, EyeOff, Info, AlertTriangle, CircleCheck, Minus, Undo2, KanbanSquare, Plus, CalendarIcon, Clock, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,7 +71,7 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
 
 // Utility functions from Kanban page
 const timeToSeconds = (hours: number, minutes: number) => {
-  return (hours * 60 * 60) + (minutes * 60);
+  return (hours * 3600) + (minutes * 60);
 };
 
 // const secondsToTime = (seconds: number) => {
@@ -81,7 +81,7 @@ const timeToSeconds = (hours: number, minutes: number) => {
 // };
 
 export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProps) {
-  const { tasks, setTasks, updateTask } = useKanbanTasks();
+  const { tasks, setTasks, updateTask, addTask, deleteTask } = useKanbanTasks();
   const [statuses, setStatuses] = useState<KanbanStatus[]>([]);
   const [editTask, setEditTask] = useState<KanbanTask | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -112,6 +112,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
     durationSeconds: 0,
     durationHours: 0,
     durationMinutes: 0,
+    initialStatus: 'in_progress' as 'planned' | 'in_progress',
   });
   const timeInputId = useId();
 
@@ -276,13 +277,15 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
     }
   };
 
-  // Add handleAddTask function
+  // Modify handleAddTask function
   const handleAddTask = async () => {
     if (!newTask.title.trim()) return;
 
-    const plannedStatus = statuses.find(s => s.name.toLowerCase().includes('planned'));
-    if (!plannedStatus) return;
+    const statusToFind = newTask.initialStatus === 'in_progress' ? 'progress' : 'planned';
+    const selectedStatus = statuses.find(s => s.name.toLowerCase().includes(statusToFind));
+    if (!selectedStatus) return;
 
+    // Convertir les heures et minutes en secondes pour le timer
     const totalDurationSeconds = timeToSeconds(newTask.durationHours, newTask.durationMinutes);
 
     try {
@@ -296,15 +299,20 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
           description: newTask.description,
           priority: newTask.priority,
           plannedEndAt: newTask.plannedEndAt,
-          statusId: plannedStatus.id,
+          statusId: selectedStatus.id,
           recurrenceType: newTask.recurrenceType,
-          durationSeconds: totalDurationSeconds,
+          durationSeconds: totalDurationSeconds, // Cette valeur sera utilisée pour le timer
         }),
       });
 
       if (response.ok) {
         const newTaskData = await response.json();
-        setTasks([...tasks, { ...newTaskData, status: plannedStatus }]);
+        const taskWithDuration = {
+          ...newTaskData,
+          status: selectedStatus,
+          durationSeconds: totalDurationSeconds
+        };
+        addTask(taskWithDuration);
         setNewTask({
           title: '',
           description: '',
@@ -314,11 +322,39 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
           durationSeconds: 0,
           durationHours: 0,
           durationMinutes: 0,
+          initialStatus: 'in_progress',
         });
         setIsNewTaskDialogOpen(false);
       }
     } catch (error) {
       console.error('Failed to create task:', error);
+    }
+  };
+
+  // Ajouter la fonction de suppression
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleDeleteTask = async (taskId: string) => {
+    setDeleteTaskId(taskId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTaskId) return;
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}/kanban/tasks/${deleteTaskId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        deleteTask(deleteTaskId);
+        setIsDeleteDialogOpen(false);
+        setDeleteTaskId(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
     }
   };
 
@@ -388,12 +424,12 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
             return (
               <div
                 key={task.id}
-                className="group relative flex items-center justify-between gap-2 p-3 rounded-lg bg-muted hover:bg-accent/70 transition cursor-pointer border border-border min-h-[56px]"
+                className="group relative flex items-center justify-between gap-2 p-5 rounded-lg bg-muted hover:bg-accent/70 transition cursor-pointer border border-border min-h-[72px]"
               >
                 {/* Nom et infos de la tâche, masqués au hover */}
                 <div className="flex-1 transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none">
-                  <span className="font-medium text-sm text-foreground">{task.title}</span>
-                  <div className="flex items-center gap-2 mt-1">
+                  <span className="font-medium text-lg text-foreground">{task.title}</span>
+                  <div className="flex items-center gap-2 mt-2">
                     {showTimer && <TaskTimer timeLeft={isActive ? timerValue : task.durationSeconds || 0} />}
                   </div>
                 </div>
@@ -401,12 +437,12 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                   <PriorityBadge priority={task.priority} />
                 </div>
                 {/* Actions au hover, centrées */}
-                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10">
+                <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-10">
                   {isActive ? (
                     <button
                       title="Pause"
                       onClick={() => handlePause(task.id)}
-                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-2 shadow"
+                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
                     >
                       <Pause size={20} />
                     </button>
@@ -414,7 +450,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     <button
                       title="Démarrer"
                       onClick={() => setActiveTaskId(task.id)}
-                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-2 shadow"
+                      className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
                     >
                       <Play size={20} />
                     </button>
@@ -424,14 +460,14 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                     onClick={async () => {
                       markAsDone(task.id);
                     }}
-                    className="bg-primary hover:bg-primary/90 text-background rounded-full p-2 shadow"
+                    className="bg-primary hover:bg-primary/90 text-background rounded-full p-1 shadow"
                   >
                     <CheckCircle size={20} />
                   </button>
                   <button
                     title="Éditer"
                     onClick={() => openEdit(task)}
-                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-2 shadow"
+                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
                   >
                     <Pencil size={20} />
                   </button>
@@ -441,7 +477,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                       e.stopPropagation();
                       setShowTimers(st => ({ ...st, [task.id]: !showTimer }));
                     }}
-                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-2 shadow"
+                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
                   >
                     {showTimer ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -452,9 +488,19 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                       setInfoTask(task);
                       setIsInfoOpen(true);
                     }}
-                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-2 shadow"
+                    className="bg-muted-foreground/20 hover:bg-muted-foreground/40 text-foreground rounded-full p-1 shadow"
                   >
                     <Info size={20} />
+                  </button>
+                  <button
+                    title="Supprimer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTask(task.id);
+                    }}
+                    className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-1 shadow"
+                  >
+                    <Trash2 size={20} />
                   </button>
                 </div>
               </div>
@@ -497,7 +543,7 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
             return (
               <div
                 key={task.id}
-                className="group relative flex items-center justify-between gap-2 p-2 rounded-md bg-muted/60 border border-border min-h-[40px] text-xs"
+                className="group relative flex items-center justify-between gap-2 p-4 rounded-md bg-muted/60 border border-border min-h-[60px] text-base"
               >
                 <div className="flex-1 truncate text-muted-foreground font-medium transition-all duration-200 group-hover:opacity-0 group-hover:pointer-events-none">
                   {task.title}
@@ -507,13 +553,22 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                   <button
                     title="Commencer"
                     onClick={() => setTaskStatus(task.id, "In Progress")}
-                    className="flex items-center gap-2 bg-muted-foreground/10 hover:bg-primary/80 text-primary hover:text-white rounded-full px-3 py-1 transition text-sm font-semibold"
+                    className="flex items-center gap-2 bg-muted-foreground/10 hover:bg-primary/80 text-primary hover:text-white rounded-full px-4 py-2 transition text-base font-semibold"
                   >
                       <span>Commencer</span>
-                    <Play size={16} />
-                  
+                    <Play size={12} />
                   </button>
                 </div>
+                <button
+                  title="Supprimer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTask(task.id);
+                  }}
+                  className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-1 shadow"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             );
           })}
@@ -551,6 +606,16 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
                 >
                   <span>Restaurer</span>
                   <Undo2 size={16} />
+                </button>
+                <button
+                  title="Supprimer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTask(task.id);
+                  }}
+                  className="bg-destructive/20 hover:bg-destructive/40 text-destructive rounded-full p-2 shadow"
+                >
+                  <Trash2 size={20} />
                 </button>
               </div>
             </div>
@@ -801,6 +866,25 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
               </Popover>
             </div>
             <div className="space-y-2">
+              <Label>État initial de la tâche</Label>
+              <div className="flex gap-2">
+                {[
+                  { value: 'planned', label: 'Planifiée' },
+                  { value: 'in_progress', label: 'En cours' }
+                ].map((status) => (
+                  <Button
+                    key={status.value}
+                    variant={newTask.initialStatus === status.value ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setNewTask({ ...newTask, initialStatus: status.value as 'planned' | 'in_progress' })}
+                  >
+                    {status.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
               <Label>Priorité</Label>
               <div className="flex gap-2">
                 {(['HIGH', 'MEDIUM', 'LOW'] as const).map((priority) => (
@@ -852,6 +936,36 @@ export default function ProjectTodoSidebar({ projectId }: ProjectTodoSidebarProp
             </div>
             <Button onClick={handleAddTask} className="w-full">
               Ajouter la tâche
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Dialog de confirmation de suppression */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Supprimer la tâche</DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <p className="text-sm text-muted-foreground">
+              Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action est irréversible.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setDeleteTaskId(null);
+              }}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Supprimer
             </Button>
           </div>
         </DialogContent>

@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 import Link from 'next/link'
 import ProfileMenu from "@/components/ui/ProfileMenu"
 import Image from "next/image"
-import { Package, Menu, X } from "lucide-react"
+import { Package, Menu, X, Edit3, Brain, Trello, Timer } from "lucide-react"
 
 interface HeaderProps {
   variant?: 'default' | 'dashboard'
@@ -24,8 +24,10 @@ export function Header({ variant = 'default', handleScroll, refs }: HeaderProps)
   const { data: session } = useSession()
 
   const navigationItems = [
-    { label: "Fonctionnalités", ref: refs?.featureRef },
-    { label: "Tarifs", ref: refs?.pricingRef }
+    { label: "Éditeur", icon: Edit3, ref: refs?.featureRef },
+    { label: "Flashcards", icon: Brain, ref: refs?.featureRef },
+    { label: "Kanban", icon: Trello, ref: refs?.featureRef },
+    { label: "Pomodoro", icon: Timer, ref: refs?.pricingRef }
   ]
 
   const handleMobileMenuClick = (ref?: React.RefObject<HTMLDivElement>) => {
@@ -56,10 +58,10 @@ export function Header({ variant = 'default', handleScroll, refs }: HeaderProps)
           {variant === 'dashboard' ? (
             <Link href="/projects" className="flex items-center gap-2 text-lg font-semibold">
               <Package className="h-6 w-6" />
-              <span>FacturePro</span>
+              <span>ProductivitySuite</span>
             </Link>
           ) : (
-            <h1 className="text-xl font-bold">Yner Cloud</h1>
+            <h1 className="text-xl font-bold">ProductivitySuite</h1>
           )}
         </div>
         
@@ -69,8 +71,9 @@ export function Header({ variant = 'default', handleScroll, refs }: HeaderProps)
               <button
                 key={item.label}
                 onClick={() => item.ref && handleScroll?.(item.ref)}
-                className="text-sm font-medium hover:text-primary transition-colors"
+                className="flex items-center gap-2 hover:text-primary transition-colors"
               >
+                <item.icon className="h-5 w-5" />
                 {item.label}
               </button>
             ))}
