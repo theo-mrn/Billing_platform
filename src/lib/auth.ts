@@ -26,8 +26,12 @@ if (!process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 export const authOptions: NextAuthOptions = {
-  debug: true,
+  debug: process.env.NODE_ENV === 'development',
   adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 jours
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -70,6 +74,7 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   callbacks: {
     session: async ({ session, token }) => {
@@ -78,9 +83,12 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    jwt: async ({ token, user }) => {
+    jwt: async ({ token, user, account }) => {
       if (user) {
         token.sub = user.id;
+      }
+      if (account) {
+        token.provider = account.provider;
       }
       return token;
     },
@@ -125,7 +133,6 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Si l'utilisateur n'a pas d'organisation, en créer une par défaut
-        console.log('Checking organizations:', userWithOrg.organizations.length);
         if (userWithOrg.organizations.length === 0) {
           console.log('Creating default organization for user:', userWithOrg.email);
           try {
@@ -146,72 +153,33 @@ export const authOptions: NextAuthOptions = {
                     isDefault: true
                   }
                 }
-              },
-              include: {
-                projects: true,
-                users: true
               }
             });
             console.log('Created default organization successfully:', {
-              organizationId: organization.id,
-              projects: organization.projects.length,
-              users: organization.users.length
+              organizationId: organization.id
             });
           } catch (orgError) {
             console.error('Error creating organization:', orgError);
-            throw orgError; // On arrête le processus si la création de l'organisation échoue
+            throw orgError;
           }
         }
         
-        try {
-          await resend.contacts.create({
-            email: user.email,
-            audienceId: process.env.RESEND_AUDIENCE_ID!,
-            unsubscribed: false,
-          });
-          console.log(`Utilisateur ajouté à Resend: ${user.email}`);
-        } catch (resendError) {
-          console.error('Error adding user to Resend:', resendError);
-          // Continue même si l'ajout à Resend échoue
-        }
-        
-        console.log('SignIn process completed successfully');
         return true;
       } catch (error) {
         console.error('Fatal error in signIn callback:', error);
         return false;
       }
     },
-    async redirect({ url, baseUrl }) {
-      try {
-        // Ensure baseUrl is correct for development
-        if (process.env.NODE_ENV === 'development') {
-          baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-        }
-        
-        console.log('Redirect callback:', { url, baseUrl });
-        
-        // If relative URL, make it absolute
-        if (url.startsWith('/')) {
-          return `${baseUrl}${url}`;
-        }
-        
-        // If URL is already absolute, return it
-        if (url.startsWith('http')) {
-          return url;
-        }
-        
-        // Default to baseUrl
-        return baseUrl;
-      } catch (error) {
-        console.error("Error in redirect callback:", error);
-        return baseUrl;
-      }
+  },
+  events: {
+    async signIn({ user }) {
+      console.log('User signed in:', user.email);
     },
-  },
-  session: { 
-    strategy: "jwt" as const,
-    maxAge: 30 * 24 * 60 * 60, // 30 jours
-  },
-  secret: process.env.NEXTAUTH_SECRET,
+    async signOut({ token }) {
+      console.log('User signed out:', token.sub);
+    },
+    async error(error) {
+      console.error('Auth error:', error);
+    }
+  }
 }; 

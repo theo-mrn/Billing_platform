@@ -15,7 +15,8 @@ export async function GET(
     console.log('GET /api/organizations/[id]/projects - Session:', {
       userId: session?.user?.id,
       userEmail: session?.user?.email,
-      organizationId: id
+      organizationId: id,
+      headers: Object.fromEntries(request.headers)
     });
 
     if (!session?.user?.email) {
@@ -29,15 +30,14 @@ export async function GET(
     // Vérifier que l'utilisateur a accès à l'organisation
     console.log('Checking user organization access for:', {
       organizationId: id,
-      userEmail: session.user.email
+      userEmail: session.user.email,
+      userId: session.user.id
     });
     
     const userOrg = await prisma.userOrganization.findFirst({
       where: {
         organizationId: id,
-        user: {
-          email: session.user.email,
-        },
+        userId: session.user.id,
       },
       include: {
         user: {
@@ -58,13 +58,15 @@ export async function GET(
     console.log('User organization found:', {
       found: !!userOrg,
       role: userOrg?.role,
-      orgName: userOrg?.organization?.name
+      orgName: userOrg?.organization?.name,
+      userId: userOrg?.user?.id
     });
 
     if (!userOrg) {
       console.error('User not authorized:', {
         organizationId: id,
-        userEmail: session.user.email
+        userEmail: session.user.email,
+        userId: session.user.id
       });
       return NextResponse.json(
         { error: "Non autorisé" },
