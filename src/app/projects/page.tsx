@@ -53,7 +53,7 @@ interface Organization {
 
 export default function ProjectsPage() {
   const { data: session, status } = useSession();
-  const { selectedOrg } = useOrganization();
+  const { selectedOrg, setSelectedOrg } = useOrganization();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -266,7 +266,7 @@ export default function ProjectsPage() {
             value={selectedOrg || ""}
             onValueChange={(value) => {
               if (value) {
-                window.location.href = `/organization/${value}/projects`;
+                setSelectedOrg(value);
               }
             }}
           >
