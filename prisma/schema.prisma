@@ -133,6 +133,7 @@ model Project {
   textFolders    TextFolder[]
   flashcards     Flashcard[]
   decks          Deck[]
+  excalidrawBoards ExcalidrawBoard[]
 
   @@index([organizationId])
 }
@@ -364,3 +365,16 @@ model FlashcardProgress {
   @@index([userId])
   @@index([flashcardId])
 }
+
+model ExcalidrawBoard {
+  id        String   @id @default(cuid())
+  name      String
+  data      Json     // Contient la scène Excalidraw (éléments, appState, etc.)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+}
+

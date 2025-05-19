@@ -11,18 +11,16 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar2"
 import {
-  Moon,
   LogOut,
   UserCircle,
   //ChartNoAxesCombined,
   Layout,
   FileText,
   BrainCircuit,
-  ListTodo,
   Home,
+  PencilRuler,
   CreditCard
 } from "lucide-react"
-import { useTheme } from "@/lib/themes"
 import Link from "next/link"
 import { Button } from "./button"
 import { XPDisplay } from "./XPDisplay"
@@ -43,41 +41,21 @@ import { MusicPlayer } from "./MusicPlayer"
 
 const globalNavigationItems = [
   {
-    title: "Home",
-    href: "/",
-    icon: Home,
-  },
-  {
-    title: "Organisation",
-    href: "/organization",
-    icon: CreditCard,
-  },
-  {
-    title: "Projet",
+    title: "Projets",
     href: "/projects",
     icon: Layout,
   },
-  // {
-  //   title: "Statistiques",
-  //   href: "/stats",
-  //   icon: ChartNoAxesCombined,
-  // },
 ]
 
 const getProjectNavigationItems = (projectId: string) => [
   {
-    title: "Vue d'ensemble",
-    href: `/projects/${projectId}`,
-    icon: Layout,
-  },
-  {
-    title: "Tâches",
-    href: `/projects/${projectId}/tasks`,
-    icon: ListTodo,
+    title: "Brouillons",
+    href: `/projects/${projectId}/draft`,
+    icon: PencilRuler,
   },
   {
     title: "Documents",
-    href: `/projects/${projectId}/documents`,
+    href: `/projects/${projectId}/texte`,
     icon: FileText,
   },
   {
@@ -89,10 +67,13 @@ const getProjectNavigationItems = (projectId: string) => [
 
 export function AppSidebar() {
   const { data: session } = useSession()
-  const { setTheme } = useTheme()
   const pathname = usePathname()
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>("")
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("")
+  
+  // Extract project ID from URL if we're in a project route
+  const projectIdMatch = pathname.match(/\/projects\/([^\/]+)/)
+  const projectIdFromUrl = projectIdMatch ? projectIdMatch[1] : ""
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(projectIdFromUrl)
 
   const projectNavigationItems = selectedProjectId 
     ? getProjectNavigationItems(selectedProjectId)
@@ -100,7 +81,10 @@ export function AppSidebar() {
 
   const handleOrganizationSelect = (orgId: string) => {
     setSelectedOrganizationId(orgId)
-    setSelectedProjectId("") // Reset project selection when organization changes
+    // Don't reset project selection when organization changes if we're in a project route
+    if (!projectIdFromUrl) {
+      setSelectedProjectId("")
+    }
   }
 
   return (
@@ -123,17 +107,29 @@ export function AppSidebar() {
           </div>
         )}
         <div className="px-3">
-          <XPDisplay />
+          <div className="flex items-center gap-3">
+          <Link href="/" className="hover:text-primary">
+              <Home className="h-5 w-5" />
+          </Link>
+            <XPDisplay />
+          </div>
         </div>
         <div className="px-3">
           <Pomodoro />
         </div>
-        <div className="px-3">
-          <MusicPlayer />
-        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="space-y-1">
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === "/"}
+              tooltip="Home"
+              className="h-10"
+            >
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
           {globalNavigationItems.map((item) => {
             const Icon = item.icon
             return (
@@ -184,23 +180,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t">
         <div className="space-y-1 p-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-3 h-10">
-                <Moon className="h-5 w-5" />
-                <span className="font-medium">Theme</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onClick={() => setTheme('dark')} className="h-9">
-                <Moon className="h-4 w-4 mr-2" /> Theme 1
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark3')} className="h-9">
-                <Moon className="h-4 w-4 mr-2" /> Theme 2
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
+          <MusicPlayer />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start gap-3 h-10">
@@ -238,6 +218,11 @@ export function AppSidebar() {
               <DropdownMenuItem asChild className="h-9">
                 <Link href="/account" className="flex items-center gap-2">
                   <UserCircle className="h-4 w-4" /> Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="h-9">
+                <Link href="/organization" className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" /> Organisation
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="h-9">
