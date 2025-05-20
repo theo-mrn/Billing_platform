@@ -15,6 +15,32 @@ const config: NextConfig = {
       "@": path.resolve(__dirname, 'src'),
       "@messages": "./messages",
     };
+    
+    // Exclure excalidraw du bundle serveur
+    if (isServer) {
+      const originalEntry = config.entry;
+      config.entry = async () => {
+        const entries = await originalEntry();
+        
+        // Traiter les modules spécifiques comme externes
+        // Cela empêche l'inclusion du code client dans le bundle serveur
+        if (config.externals) {
+          const externals = Array.isArray(config.externals) 
+            ? config.externals 
+            : [config.externals];
+          
+          config.externals = [
+            ...externals,
+            {
+              '@excalidraw/excalidraw': 'commonjs @excalidraw/excalidraw',
+            },
+          ];
+        }
+        
+        return entries;
+      };
+    }
+    
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

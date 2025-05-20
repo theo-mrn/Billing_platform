@@ -312,6 +312,7 @@ model TextFolder {
   parent      TextFolder? @relation("FolderHierarchy", fields: [parentId], references: [id])
   children    TextFolder[] @relation("FolderHierarchy")
   documents   RichTextContent[]
+  drafts      ExcalidrawBoard[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -371,10 +372,13 @@ model ExcalidrawBoard {
   name      String
   data      Json     // Contient la scène Excalidraw (éléments, appState, etc.)
   projectId String
+  folderId  String?
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folder    TextFolder? @relation(fields: [folderId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([projectId])
+  @@index([folderId])
 }
 

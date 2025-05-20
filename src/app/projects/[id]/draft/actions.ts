@@ -1,6 +1,6 @@
 "use server";
 import { prisma } from "@/lib/prisma";
-import { ExcalidrawData } from "@/types/excalidraw";
+import { ExcalidrawData, AppState } from "@/types/excalidraw";
 import { Prisma } from "@prisma/client";
 
 function convertToExcalidrawData(data: Prisma.JsonValue): ExcalidrawData {
@@ -21,14 +21,16 @@ export async function getBoards(projectId: string) {
 }
 
 // Créer un board
-export async function createBoard(projectId: string, name: string) {
+export async function createBoard(projectId: string, name: string, folderId: string | null = null) {
+  // Utiliser des valeurs par défaut sans référence à Excalidraw
   const initialData: ExcalidrawData = {
     elements: [],
     appState: {
-      collaborators: [],
+      theme: "light", // Au lieu de THEME.LIGHT
       viewBackgroundColor: "#ffffff",
       currentItemFontFamily: 1,
-    },
+      name: "",
+    } as AppState,
     files: {}
   };
 
@@ -36,7 +38,8 @@ export async function createBoard(projectId: string, name: string) {
     data: {
       name,
       data: initialData as unknown as Prisma.InputJsonValue,
-      projectId
+      projectId,
+      folderId
     },
   });
 

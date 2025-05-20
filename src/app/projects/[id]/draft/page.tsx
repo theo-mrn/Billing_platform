@@ -1,37 +1,14 @@
-import { getBoards } from "./actions";
-import DraftClient from "./DraftClient";
-import { ExcalidrawData } from "@/types/excalidraw";
 import { Metadata } from "next";
+import DraftCreator from "./components/DraftCreator";
 
-interface ExcalidrawBoardType {
-  id: string;
-  name: string;
-  data: ExcalidrawData;
+// Cette page ne sera pas pré-rendue
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
+// Aucune génération statique
+export async function generateStaticParams() {
+  return [];
 }
-
-function isExcalidrawData(data: unknown): data is ExcalidrawData {
-  if (!data || typeof data !== 'object') return false;
-  const d = data as Record<string, unknown>;
-  return (
-    Array.isArray(d.elements) &&
-    typeof d.appState === 'object' &&
-    d.appState !== null &&
-    typeof d.files === 'object' &&
-    d.files !== null
-  );
-}
-
-const DEFAULT_EXCALIDRAW_DATA: ExcalidrawData = {
-  elements: [],
-  appState: {
-    collaborators: null,
-    viewBackgroundColor: "#ffffff",
-    currentItemFontFamily: 1,
-    theme: "light",
-    name: "",
-  },
-  files: {},
-};
 
 export async function generateMetadata({ 
   params 
@@ -45,17 +22,24 @@ export async function generateMetadata({
 }
 
 export default async function Page({
-  params
+  params,
+  searchParams,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ draftId?: string }>;
 }) {
   const resolvedParams = await params;
-  const rawBoards = await getBoards(resolvedParams.id);
-  const boards: ExcalidrawBoardType[] = rawBoards.map(board => ({
-    id: board.id,
-    name: board.name,
-    data: isExcalidrawData(board.data) ? board.data : DEFAULT_EXCALIDRAW_DATA
-  }));
-  
-  return <DraftClient initialBoards={boards} projectId={resolvedParams.id} />;
+  const resolvedSearchParams = await searchParams;
+  const { draftId } = resolvedSearchParams;
+  const projectId = resolvedParams.id;
+
+  // Si aucun draftId n'est fourni, nous affichons un composant client qui créera un draft
+  if (!draftId) {
+    return <DraftCreator projectId={projectId} />;
+  }
+
+  // S'il y a un draftId, on redirige vers la version client
+  return (
+    <meta httpEquiv="refresh" content={`0; url=/client-projects/${projectId}/draft?draftId=${draftId}`} />
+  );
 }

@@ -3,43 +3,44 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { TextDocument } from "@/types/documents";
-import { convertDocument } from "@/types/documents";
 
-export async function getDocuments(projectId: string): Promise<TextDocument[]> {
+export async function getDrafts(projectId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     throw new Error("Non autorisé");
   }
 
-  const documents = await prisma.richTextContent.findMany({
+  const boards = await prisma.excalidrawBoard.findMany({
     where: {
       projectId,
+    },
+    include: {
+      folder: true,
     },
     orderBy: {
       updatedAt: 'desc',
     },
   });
 
-  return documents.map(convertDocument);
+  return boards;
 }
 
-export async function moveDocument(projectId: string, documentId: string, targetFolderId: string | null) {
+export async function moveDraft(projectId: string, draftId: string, targetFolderId: string | null) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     throw new Error("Non autorisé");
   }
 
-  // Vérifier que le document existe et appartient au projet
-  const document = await prisma.richTextContent.findFirst({
+  // Vérifier que le draft existe et appartient au projet
+  const draft = await prisma.excalidrawBoard.findFirst({
     where: {
-      id: documentId,
+      id: draftId,
       projectId,
     },
   });
 
-  if (!document) {
-    throw new Error("Document non trouvé ou n'appartient pas à ce projet");
+  if (!draft) {
+    throw new Error("Draft non trouvé ou n'appartient pas à ce projet");
   }
 
   // Si targetFolderId est fourni, vérifier que le dossier existe et appartient au projet
@@ -56,40 +57,40 @@ export async function moveDocument(projectId: string, documentId: string, target
     }
   }
 
-  // Déplacer le document
-  const updatedDocument = await prisma.richTextContent.update({
+  // Déplacer le draft
+  const updatedDraft = await prisma.excalidrawBoard.update({
     where: {
-      id: documentId,
+      id: draftId,
     },
     data: {
       folderId: targetFolderId,
     },
   });
 
-  return convertDocument(updatedDocument);
+  return updatedDraft;
 }
 
-export async function deleteDocument(projectId: string, documentId: string) {
+export async function deleteDraft(projectId: string, draftId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     throw new Error("Non autorisé");
   }
 
-  // Vérifier que le document existe et appartient au projet
-  const document = await prisma.richTextContent.findFirst({
+  // Vérifier que le draft existe et appartient au projet
+  const draft = await prisma.excalidrawBoard.findFirst({
     where: {
-      id: documentId,
+      id: draftId,
       projectId,
     },
   });
 
-  if (!document) {
-    throw new Error("Document non trouvé ou n'appartient pas à ce projet");
+  if (!draft) {
+    throw new Error("Draft non trouvé ou n'appartient pas à ce projet");
   }
 
-  await prisma.richTextContent.delete({
+  await prisma.excalidrawBoard.delete({
     where: {
-      id: documentId,
+      id: draftId,
     },
   });
 
