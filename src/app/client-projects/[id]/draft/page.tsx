@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { getBoards } from "@/app/projects/[id]/draft/actions";
 import { ExcalidrawData } from "@/types/excalidraw";
-
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 // Type pour les boards
 interface BoardType {
   id: string;
@@ -107,6 +109,15 @@ export default function ClientPage() {
   
   return (
     <div className="p-4">
+      <div className="mb-4">
+        <Link href={`/projects/${projectId}`}>
+        <Button variant="outline">
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Retour au projet
+          </Button>
+        </Link>
+         
+      </div>
       <div className="bg-white rounded-xl shadow-lg">
         <DraftClient initialBoards={[board]} />
       </div>
