@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,6 @@ export default function ProjectsPage() {
   const { selectedOrg, setSelectedOrg, isLoading: isOrgLoading } = useOrganization();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -66,93 +65,90 @@ export default function ProjectsPage() {
   });
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isOrgLoaded, setIsOrgLoaded] = useState(false);
+  const [isProjectsLoading, setIsProjectsLoading] = useState(false);
 
   useEffect(() => {
-    const fetchOrganizations = async () => {
-      if (!session?.user?.email) return;
-
-      try {
-        const response = await fetch("/api/organizations/user");
-        if (response.ok) {
-          const data = await response.json();
-          setOrganizations(data);
-          
-          // Si aucune organisation n'est sélectionnée, sélectionner la première
-          if (!selectedOrg && data.length > 0) {
-            setSelectedOrg(data[0].id);
-          }
-        } else {
+    if (!session?.user?.email) return;
+    let isMounted = true;
+    setIsOrgLoaded(false);
+    setError(null);
+    fetch("/api/organizations/user")
+      .then(async (response) => {
+        if (!response.ok) {
           const errorData = await response.json();
-          setError(errorData.error || "Erreur lors de la récupération des organisations");
+          throw new Error(errorData.error || "Erreur lors de la récupération des organisations");
         }
-      } catch (error) {
-        console.error("Error fetching organizations:", error);
-        setError("Erreur lors de la récupération des organisations");
-      }
+        return response.json();
+      })
+      .then((data) => {
+        if (!isMounted) return;
+        setOrganizations(data);
+        if (!selectedOrg && data.length > 0) {
+          setSelectedOrg(data[0].id);
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err.message);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsOrgLoaded(true);
+      });
+    return () => {
+      isMounted = false;
     };
-
-    fetchOrganizations();
-  }, [session, selectedOrg, setSelectedOrg]);
+  }, [session?.user?.email]);
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!selectedOrg) {
-        console.log("No organization selected, skipping projects fetch");
-        setProjects([]);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("Fetching projects for organization:", selectedOrg);
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/organizations/${selectedOrg}/projects`);
-        console.log("Projects API response status:", response.status);
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Projects fetched:", data.length);
-          setProjects(data);
-        } else {
+    if (!selectedOrg) {
+      setProjects([]);
+      return;
+    }
+    let isMounted = true;
+    setIsProjectsLoading(true);
+    setError(null);
+    fetch(`/api/organizations/${selectedOrg}/projects`)
+      .then(async (response) => {
+        if (!response.ok) {
           const errorData = await response.json();
-          console.error("Error response from projects API:", errorData);
-          setError(errorData.error || "Erreur lors de la récupération des projets");
+          throw new Error(errorData.error || "Erreur lors de la récupération des projets");
         }
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        setError("Erreur lors de la récupération des projets");
-      } finally {
-        setIsLoading(false);
-      }
+        return response.json();
+      })
+      .then((data) => {
+        if (!isMounted) return;
+        setProjects(data);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err.message);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsProjectsLoading(false);
+      });
+    return () => {
+      isMounted = false;
     };
-
-    fetchProjects();
   }, [selectedOrg]);
 
-  const handleCreateOrUpdate = async () => {
+  const handleCreateOrUpdate = useCallback(async () => {
     if (!selectedOrg) return;
-
     try {
-      const url = editingProject 
+      const url = editingProject
         ? `/api/organizations/${selectedOrg}/projects/${editingProject.id}`
         : `/api/organizations/${selectedOrg}/projects`;
-      
       const response = await fetch(url, {
         method: editingProject ? "PATCH" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       if (response.ok) {
         const data = await response.json();
-        setProjects(prev => 
-          editingProject
-            ? prev.map(p => p.id === data.id ? data : p)
-            : [...prev, data]
+        setProjects((prev) =>
+          editingProject ? prev.map((p) => (p.id === data.id ? data : p)) : [...prev, data]
         );
         toast.success(editingProject ? "Projet mis à jour" : "Projet créé");
         setIsDialogOpen(false);
@@ -161,86 +157,50 @@ export default function ProjectsPage() {
         const error = await response.json();
         toast.error(error.error || "Une erreur est survenue");
       }
-    } catch (error) {
-      console.error("Error creating/updating project:", error);
+    } catch {
       toast.error("Erreur lors de la création/mise à jour du projet");
     }
-  };
+  }, [selectedOrg, editingProject, formData]);
 
-  const handleDelete = async (projectId: string) => {
+  const handleDelete = useCallback(async (projectId: string) => {
     if (!selectedOrg) return;
-
     try {
       const response = await fetch(`/api/organizations/${selectedOrg}/projects/${projectId}`, {
         method: "DELETE",
       });
-
       if (response.ok) {
-        setProjects(prev => prev.filter(p => p.id !== projectId));
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
         toast.success("Projet supprimé");
         setIsDeleteDialogOpen(false);
         setProjectToDelete(null);
       } else {
-        const error = await response.json() as { error: string };
+        const error = await response.json();
         toast.error(error.error || "Une erreur est survenue");
       }
-    } catch (error) {
-      console.error("Error deleting project:", error);
+    } catch {
       toast.error("Erreur lors de la suppression du projet");
     }
-  };
+  }, [selectedOrg]);
 
-  const handleEdit = (project: Project) => {
+  const handleEdit = useCallback((project: Project) => {
     setEditingProject(project);
     setFormData({
       name: project.name,
       description: project.description || "",
     });
     setIsDialogOpen(true);
-  };
+  }, []);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({ name: "", description: "" });
     setEditingProject(null);
-  };
+  }, []);
 
-  if (!selectedOrg && organizations.length > 0) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sélectionnez une organisation</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Veuillez sélectionner une organisation pour voir ses projets.
-            </p>
-            <Select
-              value={selectedOrg || ""}
-              onValueChange={(value) => {
-                if (value) {
-                  setSelectedOrg(value);
-                }
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner une organisation" />
-              </SelectTrigger>
-              <SelectContent>
-                {organizations.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const orgSelectOptions = useMemo(() => organizations.map((org) => (
+    <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+  )), [organizations]);
 
-  if (status === "loading" || isLoading || isOrgLoading) {
+  if (!isOrgLoaded || status === "loading" || isOrgLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-12 w-64" />
@@ -277,6 +237,34 @@ export default function ProjectsPage() {
               <AlertCircle className="h-12 w-12 text-destructive" />
               <p className="text-center text-destructive">{error}</p>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!selectedOrg && organizations.length > 0) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sélectionnez une organisation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Veuillez sélectionner une organisation pour voir ses projets.
+            </p>
+            <Select
+              value={selectedOrg || ""}
+              onValueChange={(value) => value && setSelectedOrg(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sélectionner une organisation" />
+              </SelectTrigger>
+              <SelectContent>
+                {orgSelectOptions}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
       </div>
@@ -354,7 +342,6 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -383,7 +370,22 @@ export default function ProjectsPage() {
         </DialogContent>
       </Dialog>
 
-      {projects.length === 0 ? (
+      {isProjectsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="h-full flex flex-col">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-6" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-3 w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
         <Card>
           <CardContent className="p-6">
             <div className="flex flex-col items-center space-y-4">

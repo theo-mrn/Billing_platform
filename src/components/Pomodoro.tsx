@@ -10,7 +10,7 @@ import { useSession } from "next-auth/react";
 import { createPomodoroSession } from "@/app/_actions/pomodoro";
 import { toast } from "sonner";
 
-export default function Pomodoro() {
+export default function Pomodoro({ mini = true }: { mini?: boolean }) {
   const { data: session } = useSession();
   const [isActive, setIsActive] = useState(false);
   const [time, setTime] = useState(60);
@@ -19,6 +19,7 @@ export default function Pomodoro() {
   const [breakDuration, setBreakDuration] = useState(1);
   const [isBreakReady, setIsBreakReady] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSessionEnd = useCallback(async () => {
     if (!session?.user?.email || !sessionStartTime) return;
@@ -83,16 +84,73 @@ export default function Pomodoro() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  if (mini && !isExpanded) {
+    return (
+      <Card className="bg-background border-border shadow-none">
+        <CardContent className="p-1 flex items-center gap-1 justify-between">
+          <div className="flex items-center gap-1">
+            <Coffee className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs font-mono font-semibold">
+              {formatTime(time)}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {isWorkTime ? "Work" : "Break"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon"
+              variant={isActive ? "destructive" : "ghost"}
+              className="h-7 w-7 p-0"
+              onClick={toggleTimer}
+              disabled={time === 0 && isWorkTime}
+            >
+              {isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              onClick={() => setIsExpanded(true)}
+              aria-label="Ouvrir le Pomodoro"
+            >
+              <span className="sr-only">Ouvrir</span>
+              <svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M7 7L13 13M13 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="bg-background border-border">
-      <CardContent className="p-3">
+    <Card className="bg-muted border-border shadow-none">
+      <CardContent className="p-1 pb-0">
+        <div className="flex justify-between items-center mb-0">
+          <span className="text-xs font-semibold text-muted-foreground">Pomodoros</span>
+          {mini && (
+            <Button size="icon" variant="ghost" className="h-6 w-6 p-0" onClick={() => setIsExpanded(false)} aria-label="Réduire">
+              <svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M7 7L13 13M13 7L7 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </Button>
+          )}
+        </div>
         <motion.div 
-          className="mb-3"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-1"
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <span className="text-sm font-medium">Pomodoros</span>
+          <div className="text-xl font-bold font-mono">
+            {formatTime(time)}
+          </div>
+          <motion.div 
+            className="text-xs text-muted-foreground"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            {isWorkTime ? "Work Time" : "Break Time"}
+          </motion.div>
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -165,25 +223,6 @@ export default function Pomodoro() {
           )}
         </AnimatePresence>
 
-        <motion.div 
-          className="text-center mb-3"
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="text-3xl font-bold font-mono">
-            {formatTime(time)}
-          </div>
-          <motion.div 
-            className="text-xs text-muted-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            {isWorkTime ? "Work Time" : "Break Time"}
-          </motion.div>
-        </motion.div>
-
         <AnimatePresence mode="wait">
           {isBreakReady ? (
             <motion.div
@@ -193,11 +232,11 @@ export default function Pomodoro() {
               transition={{ duration: 0.2 }}
             >
               <Button 
-                className="w-full flex items-center justify-center gap-2" 
+                className="w-full flex items-center justify-center gap-1 h-7 text-xs" 
                 onClick={startBreak}
                 variant="default"
               >
-                <Coffee className="h-4 w-4" /> Start Break
+                <Coffee className="h-3 w-3" /> Start Break
               </Button>
             </motion.div>
           ) : (
@@ -208,18 +247,18 @@ export default function Pomodoro() {
               transition={{ duration: 0.2 }}
             >
               <Button 
-                className="w-full flex items-center justify-center gap-2" 
+                className="w-full flex items-center justify-center gap-1 h-7 text-xs" 
                 onClick={toggleTimer}
                 variant={isActive ? "destructive" : "default"}
                 disabled={time === 0 && isWorkTime}
               >
                 {isActive ? (
                   <>
-                    <Pause className="h-4 w-4" /> Pause
+                    <Pause className="h-3 w-3" /> Pause
                   </>
                 ) : (
                   <>
-                    <Play className="h-4 w-4" /> Start
+                    <Play className="h-3 w-3" /> Start
                   </>
                 )}
               </Button>

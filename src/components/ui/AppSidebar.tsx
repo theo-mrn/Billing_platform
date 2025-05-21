@@ -115,7 +115,6 @@ export function AppSidebar() {
           </div>
         </div>
         <div className="px-3">
-          <Pomodoro />
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -178,6 +177,9 @@ export function AppSidebar() {
           )}
         </SidebarMenu>
       </SidebarContent>
+      <div className="px-3 pb-2">
+        <Pomodoro mini={false} />
+      </div>
       <SidebarFooter className="border-t">
         <div className="space-y-1 p-3">
           <MusicPlayer />

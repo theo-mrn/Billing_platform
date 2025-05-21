@@ -216,6 +216,14 @@ const TextEditor = () => {
   if (!documentId) {
     return (
       <div className="space-y-6 p-6">
+        <Button
+          variant="ghost"
+          className="mb-4"
+          onClick={() => window.location.href = `/projects/${params.id}`}
+        >
+          <ArrowRight className="h-4 w-4 rotate-180 mr-2" />
+          Retour au projet
+        </Button>
         <Card className="group hover:shadow-md transition-all duration-200">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-between">
@@ -416,56 +424,66 @@ const TextEditor = () => {
 
   // Si un document est sélectionné, afficher l'éditeur
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <FolderExplorer
-        projectId={params.id as string}
-        onSelectDocument={(docId: string) => {
-          const url = new URL(window.location.href);
-          url.searchParams.set('doc', docId);
-          window.history.pushState({}, '', url.toString());
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        selectedDocumentId={documentId || undefined}
-      />
-      
-      <div className="flex-1 flex flex-col">
-        <div className="flex items-center gap-2 p-2 border-b">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-semibold"
-            placeholder="Titre du document"
-          />
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? "Sauvegarde..." : "Sauvegarder"}
-          </Button>
-        </div>
+    <div className="flex flex-col h-[calc(100vh-4rem)]">
+      <Button
+        variant="ghost"
+        className="mb-2 ml-2 mt-2 self-start"
+        onClick={() => window.location.href = `/projects/${params.id}`}
+      >
+        <ArrowRight className="h-4 w-4 rotate-180 mr-2" />
+        Retour au projet
+      </Button>
+      <div className="flex flex-1">
+        <FolderExplorer
+          projectId={params.id as string}
+          onSelectDocument={(docId: string) => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('doc', docId);
+            window.history.pushState({}, '', url.toString());
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          selectedDocumentId={documentId || undefined}
+        />
         
-        <div className="flex-1 overflow-y-auto">
-          <SimpleEditor 
-            content={currentContent?.content}
-            onChange={(newContent) => {
-              if (currentContent) {
-                setCurrentContent({
-                  ...currentContent,
-                  content: newContent
-                });
-              } else {
-                setCurrentContent({
-                  id: '',
-                  title,
-                  content: newContent,
-                  projectId: params.id as string,
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  folderId: null
-                });
-              }
-            }}
-          />
+        <div className="flex-1 flex flex-col">
+          <div className="flex items-center gap-2 p-2 border-b">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="text-lg font-semibold"
+              placeholder="Titre du document"
+            />
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? "Sauvegarde..." : "Sauvegarder"}
+            </Button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            <SimpleEditor 
+              content={currentContent?.content}
+              onChange={(newContent) => {
+                if (currentContent) {
+                  setCurrentContent({
+                    ...currentContent,
+                    content: newContent
+                  });
+                } else {
+                  setCurrentContent({
+                    id: '',
+                    title,
+                    content: newContent,
+                    projectId: params.id as string,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    folderId: null
+                  });
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

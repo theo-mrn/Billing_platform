@@ -64,6 +64,7 @@ export default function ProjectPage() {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   const loadData = useCallback(async () => {
     try {
@@ -198,6 +199,10 @@ export default function ProjectPage() {
                 <FolderIcon className="h-4 w-4 mr-2" />
                 Nouveau dossier
               </Button>
+              <Button variant="outline" size="sm" onClick={() => router.push(`/projects/${params.id}/flashcards`)}>
+                <PencilRuler className="h-4 w-4 mr-2" />
+                Flashcards
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm">
@@ -224,6 +229,14 @@ export default function ProjectPage() {
               : "Tous les documents du projet"
             }
           </CardDescription>
+          <div className="mt-4">
+            <Input
+              placeholder="Rechercher"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full max-w-md"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {isCreatingFolder && (
@@ -246,140 +259,121 @@ export default function ProjectPage() {
             </div>
           )}
 
-          <div className="space-y-2">
-            {activeFolder && (
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveFolder(null)}
-                  className="gap-2"
-                >
-                  <ArrowRight className="h-4 w-4 rotate-180" />
-                  Retour
-                </Button>
-                <span className="text-lg font-medium">
-                  {folders.find(f => f.id === activeFolder)?.name}
-                </span>
-              </div>
-            )}
-
-            {/* Dossiers - affichés uniquement quand on n'est pas dans un dossier */}
-            {!activeFolder && folders.map((folder) => (
-              <div 
-                key={folder.id}
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-muted group/item"
-              >
-                <div className="flex items-center gap-2">
-                  <FolderIcon className="h-4 w-4 text-yellow-400" />
-                  <span className="font-medium">{folder.name}</span>
-                  <Badge variant="outline" className="ml-2">
-                    {documents.filter(d => d.folderId === folder.id).length} document(s)
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+          {/* Folders section (top, thin style) */}
+          {!activeFolder && folders.length > 0 && (
+            <div className="mb-6">
+              <div className="flex flex-wrap gap-3 items-center">
+                {folders.map((folder) => (
+                  <div 
+                    key={folder.id}
+                    className="relative flex items-center px-4 py-1.5 rounded-full border bg-accent text-accent-foreground hover:bg-accent/80 transition-all cursor-pointer group focus-within:ring-2 focus-within:ring-ring"
+                    tabIndex={0}
                     onClick={() => setActiveFolder(folder.id)}
                   >
-                    <span>Ouvrir</span>
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleDeleteFolder(folder.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                    <FolderIcon className="h-5 w-5 text-muted-foreground mr-2" />
+                    <span className="font-semibold text-sm truncate max-w-[120px]">{folder.name}</span>
+                    <Badge variant="outline" className="ml-2 px-2 py-0 text-xs">
+                      {documents.filter(d => d.folderId === folder.id).length} doc(s)
+                    </Badge>
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 p-0">
+                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          )}
 
-            {/* Documents */}
+          {/* Retour si dans un dossier */}
+          {activeFolder && (
+            <div className="flex items-center gap-2 mb-4 pb-4 border-b">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveFolder(null)}
+                className="gap-2"
+              >
+                <ArrowRight className="h-4 w-4 rotate-180" />
+                Retour
+              </Button>
+              <span className="text-lg font-medium">
+                {folders.find(f => f.id === activeFolder)?.name}
+              </span>
+            </div>
+          )}
+
+          {/* Separator */}
+          <div className="my-4 border-b" />
+
+          {/* Documents & Drafts grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {documents
               .filter(doc => activeFolder ? doc.folderId === activeFolder : doc.folderId === null)
+              .filter(doc =>
+                doc.title.toLowerCase().includes(search.toLowerCase())
+              )
               .map((doc) => (
-                <div 
-                  key={doc.id}
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted group/item"
-                >
-                  <div
-                    className="flex-1 flex items-center gap-2 cursor-pointer"
-                    onClick={() => {
-                      if (doc.type === "text") {
-                        router.push(`/projects/${params.id}/texte?doc=${doc.id}`);
-                      } else {
-                        router.push(`/projects/${params.id}/draft?draftId=${doc.id}`);
-                      }
-                    }}
-                  >
-                    {doc.type === "text" ? (
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <PencilRuler className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span className="font-medium">{doc.title}</span>
-                    <Badge variant="outline" className="ml-2">
-                      {doc.type === "text" ? "Texte" : "Draft"}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      Modifié {formatDistanceToNow(new Date(doc.updatedAt), { locale: fr, addSuffix: true })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger>
-                            <FolderInput className="h-4 w-4 mr-2" />
-                            Déplacer vers
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent>
-                            <DropdownMenuItem
-                              onClick={async () => {
-                                try {
-                                  if (doc.type === "text") {
-                                    await moveDocument(params.id as string, doc.id, null);
-                                  } else {
-                                    await moveDraft(params.id as string, doc.id, null);
-                                  }
-                                  await loadData();
-                                  toast.success("Document déplacé avec succès");
-                                } catch (error) {
-                                  console.error('Error moving document:', error);
-                                  toast.error("Erreur lors du déplacement du document");
-                                }
-                              }}
-                            >
-                              <FolderIcon className="h-4 w-4 mr-2" />
-                              Racine du projet
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {folders.map((folder) => (
+                <Card key={doc.id} className="hover:shadow-lg transition cursor-pointer group/item max-w-xs">
+                  <CardContent className="p-4 flex flex-col h-full justify-between">
+                    <div
+                      className="flex-1 flex items-center gap-2"
+                      onClick={() => {
+                        if (doc.type === "text") {
+                          router.push(`/projects/${params.id}/texte?doc=${doc.id}`);
+                        } else {
+                          router.push(`/projects/${params.id}/draft?draftId=${doc.id}`);
+                        }
+                      }}
+                    >
+                      {doc.type === "text" ? (
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <PencilRuler className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="font-medium">{doc.title}</span>
+                      <Badge variant="outline" className="ml-2">
+                        {doc.type === "text" ? "Texte" : "Draft"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-muted-foreground">
+                        Modifié {formatDistanceToNow(new Date(doc.updatedAt), { locale: fr, addSuffix: true })}
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <FolderInput className="h-4 w-4 mr-2" />
+                              Déplacer vers
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
                               <DropdownMenuItem
-                                key={folder.id}
                                 onClick={async () => {
                                   try {
                                     if (doc.type === "text") {
-                                      await moveDocument(params.id as string, doc.id, folder.id);
+                                      await moveDocument(params.id as string, doc.id, null);
                                     } else {
-                                      await moveDraft(params.id as string, doc.id, folder.id);
+                                      await moveDraft(params.id as string, doc.id, null);
                                     }
                                     await loadData();
                                     toast.success("Document déplacé avec succès");
@@ -390,31 +384,54 @@ export default function ProjectPage() {
                                 }}
                               >
                                 <FolderIcon className="h-4 w-4 mr-2" />
-                                {folder.name}
+                                Racine du projet
                               </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => handleDeleteDocument(doc.id, doc.type)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                              <DropdownMenuSeparator />
+                              {folders.map((folder) => (
+                                <DropdownMenuItem
+                                  key={folder.id}
+                                  onClick={async () => {
+                                    try {
+                                      if (doc.type === "text") {
+                                        await moveDocument(params.id as string, doc.id, folder.id);
+                                      } else {
+                                        await moveDraft(params.id as string, doc.id, folder.id);
+                                      }
+                                      await loadData();
+                                      toast.success("Document déplacé avec succès");
+                                    } catch (error) {
+                                      console.error('Error moving document:', error);
+                                      toast.error("Erreur lors du déplacement du document");
+                                    }
+                                  }}
+                                >
+                                  <FolderIcon className="h-4 w-4 mr-2" />
+                                  {folder.name}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDeleteDocument(doc.id, doc.type)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
-
-            {folders.length === 0 && documents.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Aucun dossier ou document pour le moment.
-              </p>
-            )}
           </div>
+
+          {folders.length === 0 && documents.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Aucun dossier ou document pour le moment.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

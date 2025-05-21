@@ -517,7 +517,7 @@ const QuickAddFlashcard: React.FC<{
               variant="outline"
               onClick={(e) => handleSubmit(e, true)}
             >
-              Enregistrer et ajouter
+              Nouvelle carte
             </Button>
             <Button type="submit">Enregistrer</Button>
           </div>
